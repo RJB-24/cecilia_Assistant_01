@@ -1,4 +1,3 @@
-
 // Global type declarations for browser APIs not included in TypeScript by default
 
 interface SpeechRecognitionEvent extends Event {
@@ -50,4 +49,20 @@ declare global {
     SpeechRecognition?: new () => SpeechRecognition;
     webkitSpeechRecognition?: new () => SpeechRecognition;
   }
+
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    maxAlternatives: number;
+    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+    onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+    onerror: ((this: SpeechRecognition, ev: Event) => any) | null;
+    start(): void;
+    stop(): void;
+    abort(): void;
+  }
 }
+
+// Add this to make the file a module
+export {};

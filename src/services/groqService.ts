@@ -1,4 +1,3 @@
-
 /**
  * Groq API Integration Service
  * 
@@ -40,14 +39,14 @@ export interface GroqTextToSpeechOptions {
 
 export interface GroqCompletionResponse {
   id: string;
-  choices: {
+  choices: Array<{
     index: number;
     message: {
       role: string;
       content: string;
     };
     finishReason?: string;
-  }[];
+  }>;
   usage?: {
     promptTokens: number;
     completionTokens: number;
@@ -75,7 +74,7 @@ export class GroqService {
   async processChat(
     messages: GroqMessage[],
     options: GroqCompletionOptions = {}
-  ): Promise<GroqCompletionResponse | Response> {
+  ): Promise<GroqCompletionResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: "POST",
@@ -96,11 +95,6 @@ export class GroqService {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(`Groq API error (${response.status}): ${errorData.error?.message || "Unknown error"}`);
-      }
-
-      // Handle streaming if enabled
-      if (options.stream) {
-        return response;
       }
 
       const data = await response.json();
