@@ -5,6 +5,7 @@
  */
 
 import { groqService } from './groqService';
+import '../lib/types'; // Import the types to make them available
 
 export interface VoiceServiceOptions {
   language?: string; // 'en-US', 'hi-IN', etc.

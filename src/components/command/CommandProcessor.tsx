@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MicIcon, StopCircleIcon, SendIcon, CameraIcon, CogIcon, LightbulbIcon } from "lucide-react";
+import { Mic, StopCircle, Send, Camera, Cog, Lightbulb } from "lucide-react";
 import { groqService } from "@/services/groqService";
 import { screenpipeService } from "@/services/screenpipeService";
 import { voiceService } from "@/services/voiceService";
@@ -107,7 +107,7 @@ const CommandProcessor: React.FC = () => {
       };
     } else if (originalCommand.toLowerCase().includes("schedule") || originalCommand.toLowerCase().includes("calendar")) {
       return {
-        type: "calendar",
+        type: "app", // Changed from "calendar" to "app" to match the type definition
         action: "create_event",
         parameters: {
           title: "New Event",
@@ -260,7 +260,7 @@ const CommandProcessor: React.FC = () => {
               )}
               disabled={isProcessing}
             >
-              {isListening ? <StopCircleIcon className="h-4 w-4 text-groqflow-error" /> : <MicIcon className="h-4 w-4" />}
+              {isListening ? <StopCircle className="h-4 w-4 text-groqflow-error" /> : <Mic className="h-4 w-4" />}
             </Button>
             <Button 
               variant="outline"
@@ -270,14 +270,14 @@ const CommandProcessor: React.FC = () => {
               className="bg-jarvis-dark/80 border-jarvis-primary/30 hover:bg-jarvis-blue/20"
               disabled={isProcessing || isListening || !isScreenpipeConfigured}
             >
-              <CameraIcon className="h-4 w-4" />
+              <Camera className="h-4 w-4" />
             </Button>
             <Button 
               onClick={handleSendCommand}
               disabled={!command.trim() || isProcessing || isListening}
               className="bg-jarvis-blue hover:bg-jarvis-sky text-white"
             >
-              <SendIcon className="h-4 w-4 mr-2" />
+              <Send className="h-4 w-4 mr-2" />
               Send
             </Button>
           </div>
@@ -285,7 +285,7 @@ const CommandProcessor: React.FC = () => {
           {!isGroqConfigured && (
             <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded text-yellow-400 text-xs">
               <div className="flex items-center gap-2">
-                <CogIcon className="h-4 w-4" />
+                <Cog className="h-4 w-4" />
                 <span>Groq API not configured. Add your API key in Settings.</span>
               </div>
             </div>
@@ -307,7 +307,7 @@ const CommandProcessor: React.FC = () => {
                   disabled={!response || isSpeaking}
                   className="h-8 w-8"
                 >
-                  <LightbulbIcon className="h-4 w-4 text-jarvis-primary" />
+                  <Lightbulb className="h-4 w-4 text-jarvis-primary" />
                 </Button>
               )}
             </div>

@@ -75,7 +75,7 @@ export class GroqService {
   async processChat(
     messages: GroqMessage[],
     options: GroqCompletionOptions = {}
-  ): Promise<GroqCompletionResponse> {
+  ): Promise<GroqCompletionResponse | Response> {
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: "POST",
@@ -104,7 +104,7 @@ export class GroqService {
       }
 
       const data = await response.json();
-      return data;
+      return data as GroqCompletionResponse;
     } catch (error) {
       console.error("Error processing chat with Groq:", error);
       throw new Error(`Failed to process chat: ${error instanceof Error ? error.message : String(error)}`);

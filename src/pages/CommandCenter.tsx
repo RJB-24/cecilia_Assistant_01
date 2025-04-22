@@ -5,7 +5,7 @@ import CommandProcessor from "@/components/command/CommandProcessor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { MicrophoneIcon, BotIcon, ComputerIcon, ClipboardListIcon } from "lucide-react";
+import { Mic, Bot, Computer, ClipboardList } from "lucide-react";
 
 const CommandCenter = () => {
   return (
@@ -18,19 +18,19 @@ const CommandCenter = () => {
         <Tabs defaultValue="command" className="w-full">
           <TabsList className="grid grid-cols-4 mb-6">
             <TabsTrigger value="command" className="data-[state=active]:jarvis-glow-text">
-              <MicrophoneIcon className="h-4 w-4 mr-2" />
+              <Mic className="h-4 w-4 mr-2" />
               Commands
             </TabsTrigger>
             <TabsTrigger value="assistant" className="data-[state=active]:jarvis-glow-text">
-              <BotIcon className="h-4 w-4 mr-2" />
+              <Bot className="h-4 w-4 mr-2" />
               Assistant
             </TabsTrigger>
             <TabsTrigger value="automation" className="data-[state=active]:jarvis-glow-text">
-              <ComputerIcon className="h-4 w-4 mr-2" />
+              <Computer className="h-4 w-4 mr-2" />
               Automation
             </TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:jarvis-glow-text">
-              <ClipboardListIcon className="h-4 w-4 mr-2" />
+              <ClipboardList className="h-4 w-4 mr-2" />
               History
             </TabsTrigger>
           </TabsList>
