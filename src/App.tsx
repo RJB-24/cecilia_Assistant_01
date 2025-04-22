@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import Workflows from "./pages/Workflows";
 import Analytics from "./pages/Analytics";
 import Notifications from "./pages/Notifications";
+import CommandCenter from "./pages/CommandCenter";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/command" element={<CommandCenter />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
