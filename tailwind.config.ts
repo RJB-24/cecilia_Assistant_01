@@ -19,7 +19,31 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				orbitron: ['Orbitron', 'Montserrat', 'Inter', 'Arial', 'sans-serif'],
+				mono: ['Roboto Mono', 'monospace'],
+				sans: ['Montserrat', 'Inter', 'sans-serif'],
+			},
 			colors: {
+				jarvis: {
+					primary: "#9b87f5",
+					secondary: "#7E69AB",
+					dark: "#1A1F2C",
+					light: "#D6BCFA",
+					blue: "#1EAEDB",
+					sky: "#33C3F0",
+					bg: "#131A22",
+					glow: "rgba(30,174,219,0.2)",
+					border: "#232C3B",
+				},
+				groqflow: {
+					navy: "#102542",
+					teal: "#2D9CDB",
+					lightgray: "#F5F7FA",
+					success: "#4CAF50",
+					warning: "#FFC107",
+					error: "#FF5252",
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
@@ -53,79 +77,24 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
-				},
-				groqflow: {
-					navy: '#102542',
-					teal: '#2D9CDB',
-					lightgray: '#F5F7FA',
-					success: '#4CAF50',
-					warning: '#FFC107',
-					error: '#FF5252',
-				}
+			},
+			boxShadow: {
+				"jarvis-glow": "0 0 30px 5px #1EAEDB40, 0 0 2px 1px #9b87f580",
 			},
 			borderRadius: {
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
-			},
-			keyframes: {
-				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
-				},
-				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
-				},
-				'pulse-ring': {
-					'0%': {
-						transform: 'scale(0.8)',
-						opacity: '0.8'
-					},
-					'100%': {
-						transform: 'scale(1.2)',
-						opacity: '0'
-					}
-				},
-				'bounce-subtle': {
-					'0%, 100%': {
-						transform: 'translateY(-2%)',
-						animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)'
-					},
-					'50%': {
-						transform: 'translateY(0)',
-						animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)'
-					}
-				}
+				jarvis: "1.25rem"
 			},
 			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				'pulse-ring': 'pulse-ring 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite',
-				'bounce-subtle': 'bounce-subtle 2s infinite'
+				"glow": "jarvisGlow 2.5s ease-in-out infinite alternate",
 			},
-			fontFamily: {
-				sans: ['Inter', 'sans-serif'],
-				mono: ['Roboto Mono', 'monospace'],
-			}
+			keyframes: {
+				jarvisGlow: {
+					'0%': { boxShadow: '0 0 30px 5px #1EAEDB40' },
+					'100%': { boxShadow: '0 0 60px 10px #1EAEDB60' },
+				},
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
 } satisfies Config;
+

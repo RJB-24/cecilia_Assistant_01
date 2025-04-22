@@ -1,139 +1,53 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 212 100% 25%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 196 97% 44%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 196 97% 44%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --background: #131A22;
+    --foreground: #9b87f5;
+    --card: #202738;
+    --card-foreground: #9b87f5;
+    --popover: #242952;
+    --popover-foreground: #9b87f5;
+    --primary: #9b87f5;
+    --primary-foreground: #1A1F2C;
+    --secondary: #33C3F0;
+    --secondary-foreground: #1A1F2C;
+    --muted: #232C3B;
+    --muted-foreground: #D6BCFA;
+    --accent: #1EAEDB;
+    --accent-foreground: #1A1F2C;
+    --destructive: #FF5252;
+    --destructive-foreground: #ffffff;
+    --border: #232C3B;
+    --input: #232C3B;
+    --ring: #9b87f5;
+    --radius: 1.25rem;
   }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
   body {
-    @apply bg-groqflow-lightgray text-foreground font-sans;
+    @apply bg-jarvis-bg font-orbitron text-jarvis-primary;
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 0%, #232C3B 0%, #131A22 100%);
+    background-attachment: fixed;
+  }
+  .jarvis-hologram {
+    @apply bg-jarvis-dark/70 border-jarvis-primary shadow-jarvis-glow rounded-jarvis;
+    border-width: 1.5px;
+    animation: jarvisGlow 2.5s ease-in-out infinite alternate;
+    box-shadow: 0 0 30px 5px #1EAEDB40, 0 0 2px 1px #9b87f580;
+  }
+  .jarvis-glow-text {
+    text-shadow: 0 0 8px #1EAEDB, 0 0 1px #9b87f5;
   }
 }
 
-.mic-pulse {
-  position: relative;
-}
-
-.mic-pulse:before {
-  content: '';
-  position: absolute;
-  border: 4px solid theme('colors.groqflow.teal');
-  border-radius: 50%;
-  top: -8px;
-  left: -8px;
-  right: -8px;
-  bottom: -8px;
-  animation: pulse-ring 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-  opacity: 0;
-}
-
-.mic-active:before {
-  opacity: 0.8;
-}
-
-.task-card {
-  border-left: 4px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.task-card.priority-high {
-  border-left-color: theme('colors.groqflow.error');
-}
-
-.task-card.priority-medium {
-  border-left-color: theme('colors.groqflow.warning');
-}
-
-.task-card.priority-low {
-  border-left-color: theme('colors.groqflow.success');
-}
-
-.status-indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 0.5rem;
-}
-
-.status-online {
-  background-color: theme('colors.groqflow.success');
-}
-
-.status-offline {
-  background-color: theme('colors.groqflow.error');
-}
-
-.status-connecting {
-  background-color: theme('colors.groqflow.warning');
-  animation: pulse 2s infinite;
+@keyframes jarvisGlow {
+  0% {
+    box-shadow: 0 0 30px 5px #1EAEDB40;
+  }
+  100% {
+    box-shadow: 0 0 60px 10px #1EAEDB60;
+  }
 }
