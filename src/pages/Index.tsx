@@ -4,7 +4,9 @@ import MainLayout from "@/components/layout/MainLayout";
 import CommandInput from "@/components/dashboard/CommandInput";
 import TaskCard from "@/components/dashboard/TaskCard";
 import SystemStatus from "@/components/dashboard/SystemStatus";
+import QuickActions from "@/components/dashboard/QuickActions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   // Sample task data
@@ -46,12 +48,12 @@ const Index = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
-            <Card className="shadow-sm">
+            <Card className="jarvis-hologram">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold">Recent Tasks</CardTitle>
+                <CardTitle className="text-xl font-bold jarvis-glow-text">Recent Tasks</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {tasks.map((task, index) => (
                     <TaskCard key={index} {...task} />
                   ))}
@@ -64,6 +66,8 @@ const Index = () => {
             <SystemStatus />
           </div>
         </div>
+        
+        <QuickActions />
       </div>
     </MainLayout>
   );

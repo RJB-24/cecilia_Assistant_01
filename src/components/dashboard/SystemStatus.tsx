@@ -72,10 +72,10 @@ const SystemStatus = () => {
   };
 
   return (
-    <Card className="shadow-sm">
+    <Card className="jarvis-hologram">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">System Status</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-xl font-bold jarvis-glow-text">System Status</CardTitle>
+        <CardDescription className="text-jarvis-secondary">
           Current performance metrics and resource usage
         </CardDescription>
       </CardHeader>
@@ -86,9 +86,9 @@ const SystemStatus = () => {
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
                   {statusIcon(metric.status)}
-                  <span className="text-sm font-medium ml-2">{metric.name}</span>
+                  <span className="text-sm font-medium ml-2 text-jarvis-light">{metric.name}</span>
                 </div>
-                <span className="text-sm font-bold">
+                <span className="text-sm font-bold jarvis-glow-text">
                   {metric.value}{metric.unit}
                 </span>
               </div>

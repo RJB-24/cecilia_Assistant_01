@@ -26,28 +26,89 @@
     --ring: #9b87f5;
     --radius: 1.25rem;
   }
+  
   body {
     @apply bg-jarvis-bg font-orbitron text-jarvis-primary;
     min-height: 100vh;
     background: radial-gradient(circle at 50% 0%, #232C3B 0%, #131A22 100%);
     background-attachment: fixed;
   }
+  
   .jarvis-hologram {
     @apply bg-jarvis-dark/70 border-jarvis-primary shadow-jarvis-glow rounded-jarvis;
     border-width: 1.5px;
     animation: jarvisGlow 2.5s ease-in-out infinite alternate;
     box-shadow: 0 0 30px 5px #1EAEDB40, 0 0 2px 1px #9b87f580;
   }
+  
   .jarvis-glow-text {
     text-shadow: 0 0 8px #1EAEDB, 0 0 1px #9b87f5;
   }
-}
-
-@keyframes jarvisGlow {
-  0% {
-    box-shadow: 0 0 30px 5px #1EAEDB40;
+  
+  .status-indicator {
+    @apply inline-block w-2 h-2 rounded-full;
   }
-  100% {
-    box-shadow: 0 0 60px 10px #1EAEDB60;
+  
+  .status-online {
+    @apply bg-groqflow-success;
+    box-shadow: 0 0 5px 1px rgba(76, 175, 80, 0.7);
+  }
+  
+  .status-offline {
+    @apply bg-groqflow-error;
+    box-shadow: 0 0 5px 1px rgba(255, 82, 82, 0.7);
+  }
+  
+  .status-connecting {
+    @apply bg-groqflow-warning;
+    animation: blink 1.5s infinite;
+    box-shadow: 0 0 5px 1px rgba(255, 193, 7, 0.7);
+  }
+  
+  .mic-pulse {
+    position: relative;
+  }
+  
+  .mic-active::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 82, 82, 0.3);
+    animation: pulse 1.5s ease-out infinite;
+    z-index: -1;
+  }
+  
+  @keyframes pulse {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.8;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1.5);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  @keyframes jarvisGlow {
+    0% {
+      box-shadow: 0 0 30px 5px #1EAEDB40;
+    }
+    100% {
+      box-shadow: 0 0 60px 10px #1EAEDB60;
+    }
   }
 }

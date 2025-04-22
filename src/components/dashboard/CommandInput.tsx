@@ -11,10 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MicIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const CommandInput = () => {
   const [command, setCommand] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const handleSendCommand = () => {
     if (!command.trim()) return;
@@ -29,40 +31,59 @@ const CommandInput = () => {
       setIsProcessing(false);
     }, 1500);
   };
+  
+  const toggleVoiceCommand = () => {
+    if (!isListening) {
+      setIsListening(true);
+      toast.info("Cecilia is listening. Start speaking...");
+      setTimeout(() => {
+        setIsListening(false);
+        const mockCommand = "Email the Q1 report to the CFO";
+        setCommand(mockCommand);
+        toast.success(`Cecilia heard: ${mockCommand}`);
+      }, 3000);
+    } else {
+      setIsListening(false);
+      toast.info("Cecilia stopped listening.");
+    }
+  };
 
   return (
-    <Card className="shadow-sm">
+    <Card className="jarvis-hologram">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Command Center</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-xl font-bold jarvis-glow-text">Command Center</CardTitle>
+        <CardDescription className="text-jarvis-secondary">
           Type or speak your command to Cecilia
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex space-x-2">
           <Input
-            placeholder="Type 'Cecilia, help me with...' to begin"
+            placeholder="Cecilia, help me with..."
             value={command}
             onChange={(e) => setCommand(e.target.value)}
-            className="flex-1"
+            className="flex-1 bg-jarvis-dark/80 border-jarvis-border text-jarvis-primary"
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSendCommand();
             }}
-            disabled={isProcessing}
+            disabled={isProcessing || isListening}
           />
           <Button 
             variant="outline"
             size="icon"
             type="button"
-            disabled={isProcessing}
-            className="bg-white"
+            onClick={toggleVoiceCommand}
+            className={cn(
+              "relative bg-jarvis-dark/80 border-jarvis-primary/30 hover:bg-jarvis-blue/20",
+              isListening ? "mic-pulse mic-active" : ""
+            )}
           >
-            <MicIcon className="h-4 w-4" />
+            <MicIcon className={cn("h-4 w-4", isListening ? "text-groqflow-error" : "")} />
           </Button>
           <Button 
             onClick={handleSendCommand}
             disabled={!command.trim() || isProcessing}
-            className="bg-groqflow-navy hover:bg-groqflow-navy/80"
+            className="bg-jarvis-blue hover:bg-jarvis-sky text-white"
           >
             <SendIcon className="h-4 w-4 mr-2" />
             Send

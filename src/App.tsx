@@ -8,6 +8,9 @@ import Index from "./pages/Index";
 import Tasks from "./pages/Tasks";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Workflows from "./pages/Workflows";
+import Analytics from "./pages/Analytics";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +23,10 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/workflows" element={<Workflows />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
