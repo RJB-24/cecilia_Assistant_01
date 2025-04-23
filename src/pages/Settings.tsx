@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,10 +10,10 @@ import { toast } from "sonner";
 import { groqService } from "@/services/groqService";
 import { screenpipeService } from "@/services/screenpipeService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, AlertTriangle, Settings, Save, Computer } from "lucide-react";
+import { Check, AlertTriangle, SettingsIcon, Save, Computer } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
-const Settings = () => {
+const SettingsPage = () => {
   // Groq settings
   const [groqApiKey, setGroqApiKey] = useState<string>(localStorage.getItem("GROQ_API_KEY") || "");
   const [groqModel, setGroqModel] = useState<string>(localStorage.getItem("GROQ_MODEL") || "llama-3.3-70b-versatile");
@@ -348,4 +347,4 @@ const Settings = () => {
   );
 };
 
-export default Settings;
+export default SettingsPage;
