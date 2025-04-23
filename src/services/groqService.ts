@@ -104,6 +104,9 @@ export interface GroqStreamCompletionResponse {
   }>;
 }
 
+// Type for stream processing
+type StreamParser = TransformStream<Uint8Array, GroqStreamCompletionResponse>;
+
 export class GroqService {
   private apiKey: string;
   private model: string;
@@ -197,7 +200,48 @@ export class GroqService {
         throw new Error(`Groq API error (${response.status}): ${errorData.error?.message || "Unknown error"}`);
       }
 
-      return response.body;
+      // Transform the response stream to handle SSE
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      
+      if (!reader) {
+        throw new Error("Failed to get response stream reader");
+      }
+      
+      return new ReadableStream<GroqStreamCompletionResponse>({
+        async start(controller) {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              const chunk = decoder.decode(value);
+              const lines = chunk.split("\n").filter(line => line.trim() !== "");
+              
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  const data = line.slice(6);
+                  if (data === "[DONE]") {
+                    break;
+                  }
+                  
+                  try {
+                    const parsedData = JSON.parse(data);
+                    controller.enqueue(parsedData);
+                  } catch (e) {
+                    console.error("Error parsing SSE data:", e);
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            controller.error(error);
+          } finally {
+            controller.close();
+            reader.releaseLock();
+          }
+        }
+      });
     } catch (error) {
       console.error("Error streaming chat with Groq:", error);
       throw new Error(`Failed to stream chat: ${error instanceof Error ? error.message : String(error)}`);
@@ -232,11 +276,16 @@ export class GroqService {
         { role: "user", content: command }
       ];
       
+      const originalModel = this.model;
+      this.model = this.defaultAgentModel;
+      
       const result = await this.processChat(messages, {
-        model: this.defaultAgentModel,
         temperature: 0.7,
-        maxCompletionTokens: 1024,
+        maxCompletionTokens: 1024
       });
+      
+      // Reset model to original
+      this.model = originalModel;
       
       return result.choices[0]?.message.content || "";
     } catch (error) {
@@ -260,11 +309,16 @@ export class GroqService {
         }
       ];
       
+      const originalModel = this.model;
+      this.model = this.defaultVisionModel;
+      
       const result = await this.processChat(messages, {
-        model: this.defaultVisionModel,
         temperature: 0.7,
         maxCompletionTokens: 1024
       });
+      
+      // Reset model to original
+      this.model = originalModel;
       
       return result.choices[0]?.message.content || "";
     } catch (error) {

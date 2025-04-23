@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, StopCircle, Send, Camera, Cog, Lightbulb } from "lucide-react";
+import { Mic, StopCircle, Send, Camera, Cog, Lightbulb, Computer } from "lucide-react";
 import { groqService } from "@/services/groqService";
 import { screenpipeService } from "@/services/screenpipeService";
 import { voiceService } from "@/services/voiceService";

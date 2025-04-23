@@ -3,11 +3,13 @@
 
 GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomously executing tasks such as email drafting, social media management, data analysis, and proactive reminders. The assistant leverages Groq's AI capabilities for natural language processing and Screenpipe's Terminator for desktop automation.
 
+![GroqFlow Demo](https://picsum.photos/800/400)
+
 ---
 
 ## Features
 
-- **Voice-First Interaction**: Natural language commands in multiple languages
+- **Voice-First Interaction**: Natural language commands in English and Hindi
 - **Screen Context Intelligence**: Live screen analysis and auto-error recovery
 - **Cross-App Automation**: Social media management, data analysis, and proactive reminders
 - **Security & Privacy**: Local processing and automatic redaction of sensitive information
@@ -30,7 +32,7 @@ GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomo
 - Node.js (v16 or higher)
 - npm (v7 or higher)
 - Groq API Key ([Get one here](https://console.groq.com))
-- Screenpipe API Key ([Get one here](https://docs.screenpi.pe/))
+- Screenpipe Terminator Agent ([Download here](https://docs.screenpi.pe/terminator/getting-started))
 
 ---
 
@@ -50,8 +52,9 @@ GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomo
 3. Create a `.env` file in the root directory and add your API keys:
    ```
    VITE_GROQ_API_KEY=your_groq_api_key
-   VITE_SCREENPIPE_API_KEY=your_screenpipe_api_key
    ```
+
+4. Install the Screenpipe Terminator agent on your computer by following the instructions at [Screenpipe Documentation](https://docs.screenpi.pe/terminator/getting-started).
 
 ---
 
@@ -64,6 +67,16 @@ npm run dev
 ```
 
 Open your browser at `http://localhost:3000` (or as shown in your terminal) to access GroqFlow.
+
+---
+
+## Initial Setup
+
+1. After starting the application, go to the **Settings** page.
+2. Enter your **Groq API Key** from [Groq Console](https://console.groq.com/).
+3. Click **Check Agent Status** to verify if Screenpipe Terminator is installed and running.
+4. If Screenpipe Terminator is not detected, download and install it from the link provided.
+5. After installing Terminator, click **Connect to Agent** to establish the connection.
 
 ---
 
@@ -84,12 +97,23 @@ Open your browser at `http://localhost:3000` (or as shown in your terminal) to a
 - Use natural language phrases similar to voice commands.
 - Press enter or click submit to process commands.
 
+### Agent Mode
+
+- Enable "Agent Mode" checkbox to use Groq's compound-beta model with web search and code execution capabilities.
+- This allows Cecilia to search the web for real-time information and execute code to solve problems.
+- Example: "What's the current weather in Tokyo?" or "Calculate the monthly payment for a $250,000 loan with 5% interest."
+
+### Screen Capture
+
+- Click the camera button to capture your screen for context-aware commands.
+- The assistant will use this context to understand what you're working on.
+
 ### Command Center Tabs
 
 - **Commands**: Interact with Cecilia via voice or text.
-- **Assistant**: Planned AI Assistant features for brainstorming, detailed queries, and drafting.
-- **Automation**: Planned desktop automation controls for cross-app workflows.
-- **History**: Planned command interaction history viewing and replay.
+- **Assistant**: AI Assistant features for brainstorming, detailed queries, and drafting.
+- **Automation**: Desktop automation controls for cross-app workflows.
+- **History**: Command interaction history viewing and replay.
 
 ### Task Automation
 
@@ -124,36 +148,35 @@ For details, see [Screenpipe Terminator JS SDK](https://docs.screenpi.pe/termina
 
 ---
 
-## Configuration
+## Troubleshooting
 
-- API keys must be set in `.env` as `VITE_GROQ_API_KEY` and `VITE_SCREENPIPE_API_KEY`.
-- The app reads keys at runtime for secure API communication.
-- Customizing assistant voice and language settings can be done via settings page (planned).
+### Groq API Issues
+
+- Verify your API key is correct in Settings.
+- Check if you've exceeded your API rate limits.
+- Try selecting a different model if responses are slow.
+
+### Screenpipe Terminator Issues
+
+- Ensure the Terminator agent is installed and running on your computer.
+- Check if you're running the latest version of the agent.
+- Restart the agent if it's not responding.
+- Make sure you allow screen recording permissions when prompted.
+
+### Voice Recognition Issues
+
+- Check if your browser has microphone permissions enabled.
+- Try using Chrome for best voice recognition performance.
+- Speak clearly and at a moderate pace.
 
 ---
 
 ## Security & Privacy
 
+- Groq API key is stored locally in your browser's localStorage.
 - Voice and screen data are processed locally or securely via APIs.
 - No cloud storage for sensitive user audio or screen data.
-- Sensitive info in screen captures is automatically redacted.
-
----
-
-## Future Enhancements
-
-- AI Assistant capabilities (task drafting, brainstorming).
-- Full desktop automation workflows with error handling.
-- Interactive workflow editor with drag-and-drop.
-- User interaction history and analytics.
-- Notification center and system status overview.
-- Multi-language support enhancements.
-
----
-
-## Contributing
-
-Contributions are welcome! Please submit issues or pull requests.
+- Sensitive info in screen captures can be automatically redacted with Screenpipe configuration.
 
 ---
 
@@ -164,4 +187,3 @@ MIT License
 ---
 
 Thank you for using GroqFlow! Your intelligent workflow assistant.
-
