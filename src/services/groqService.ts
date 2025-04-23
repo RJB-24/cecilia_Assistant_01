@@ -1,3 +1,4 @@
+
 /**
  * Groq API Integration Service
  * 
@@ -6,6 +7,9 @@
  * - Chat completions
  * - Voice transcription (speech-to-text)
  * - Text-to-speech
+ * - Vision capabilities
+ * - Reasoning capabilities
+ * - Agentic tooling
  */
 
 export interface GroqConfig {
@@ -15,7 +19,25 @@ export interface GroqConfig {
 
 export interface GroqMessage {
   role: 'system' | 'assistant' | 'user';
-  content: string;
+  content: string | GroqMessageContent[];
+}
+
+export interface GroqMessageContent {
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: {
+    url: string;
+  };
+}
+
+export interface GroqTool {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, any>;
+    strict?: boolean;
+  };
 }
 
 export interface GroqCompletionOptions {
@@ -23,6 +45,12 @@ export interface GroqCompletionOptions {
   maxCompletionTokens?: number;
   stream?: boolean;
   responseFormat?: { type: string };
+  top_p?: number;
+  stop?: string | string[] | null;
+  seed?: number;
+  tools?: GroqTool[];
+  toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
+  reasoning_format?: 'parsed' | 'raw' | 'hidden';
 }
 
 export interface GroqTranscriptionOptions {
@@ -30,6 +58,7 @@ export interface GroqTranscriptionOptions {
   prompt?: string;
   responseFormat?: string;
   timestampGranularities?: string[];
+  temperature?: number;
 }
 
 export interface GroqTextToSpeechOptions {
@@ -44,14 +73,35 @@ export interface GroqCompletionResponse {
     message: {
       role: string;
       content: string;
+      tool_calls?: Array<{
+        id: string;
+        type: 'function';
+        function: {
+          name: string;
+          arguments: string;
+        };
+      }>;
     };
     finishReason?: string;
+    reasoning?: string;
   }>;
   usage?: {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
   };
+}
+
+export interface GroqStreamCompletionResponse {
+  id: string;
+  choices: Array<{
+    index: number;
+    delta: {
+      role?: string;
+      content?: string;
+    };
+    finishReason?: string;
+  }>;
 }
 
 export class GroqService {
@@ -62,6 +112,8 @@ export class GroqService {
   private defaultWhisperModel = "whisper-large-v3-turbo";
   private defaultTTSModel = "playai-tts";
   private defaultTTSVoice = "Fritz-PlayAI";
+  private defaultVisionModel = "meta-llama/llama-4-scout-17b-16e-instruct";
+  private defaultAgentModel = "compound-beta";
 
   constructor(config: GroqConfig) {
     this.apiKey = config.apiKey;
@@ -89,6 +141,12 @@ export class GroqService {
           max_completion_tokens: options.maxCompletionTokens ?? 1024,
           stream: options.stream ?? false,
           response_format: options.responseFormat,
+          top_p: options.top_p ?? 1.0,
+          stop: options.stop || null,
+          seed: options.seed,
+          tools: options.tools,
+          tool_choice: options.toolChoice,
+          reasoning_format: options.reasoning_format,
         }),
       });
 
@@ -102,6 +160,47 @@ export class GroqService {
     } catch (error) {
       console.error("Error processing chat with Groq:", error);
       throw new Error(`Failed to process chat: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Stream chat completion responses from Groq API
+   */
+  async streamChat(
+    messages: GroqMessage[],
+    options: GroqCompletionOptions = {}
+  ): Promise<ReadableStream<GroqStreamCompletionResponse> | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: messages,
+          temperature: options.temperature ?? 0.7,
+          max_completion_tokens: options.maxCompletionTokens ?? 1024,
+          stream: true,
+          response_format: options.responseFormat,
+          top_p: options.top_p ?? 1.0,
+          stop: options.stop || null,
+          tools: options.tools,
+          tool_choice: options.toolChoice,
+          reasoning_format: options.reasoning_format,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Groq API error (${response.status}): ${errorData.error?.message || "Unknown error"}`);
+      }
+
+      return response.body;
+    } catch (error) {
+      console.error("Error streaming chat with Groq:", error);
+      throw new Error(`Failed to stream chat: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -120,6 +219,57 @@ export class GroqService {
     } catch (error) {
       console.error("Error processing command with Groq:", error);
       throw new Error(`Failed to process command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Process commands with agentic capabilities (web search and code execution)
+   */
+  async processAgentCommand(command: string): Promise<string> {
+    try {
+      const messages: GroqMessage[] = [
+        { role: "system", content: "You are Cecilia, a helpful AI assistant with web search and code execution capabilities." },
+        { role: "user", content: command }
+      ];
+      
+      const result = await this.processChat(messages, {
+        model: this.defaultAgentModel,
+        temperature: 0.7,
+        maxCompletionTokens: 1024,
+      });
+      
+      return result.choices[0]?.message.content || "";
+    } catch (error) {
+      console.error("Error processing agent command with Groq:", error);
+      throw new Error(`Failed to process agent command: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Process image with vision capabilities
+   */
+  async processImageWithText(imageUrl: string, question: string): Promise<string> {
+    try {
+      const messages: GroqMessage[] = [
+        { 
+          role: "user", 
+          content: [
+            { type: "text", text: question },
+            { type: "image_url", image_url: { url: imageUrl } }
+          ]
+        }
+      ];
+      
+      const result = await this.processChat(messages, {
+        model: this.defaultVisionModel,
+        temperature: 0.7,
+        maxCompletionTokens: 1024
+      });
+      
+      return result.choices[0]?.message.content || "";
+    } catch (error) {
+      console.error("Error processing image with Groq:", error);
+      throw new Error(`Failed to process image: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -149,6 +299,10 @@ export class GroqService {
         options.timestampGranularities.forEach(granularity => {
           formData.append("timestamp_granularities[]", granularity);
         });
+      }
+
+      if (options.temperature !== undefined) {
+        formData.append("temperature", options.temperature.toString());
       }
 
       const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {
@@ -227,6 +381,60 @@ export class GroqService {
     } catch (error) {
       console.error("Error speaking text with Groq:", error);
       throw new Error(`Failed to speak text: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Submit a batch job to Groq API
+   */
+  async submitBatch(batchJobs: any[], options: { completionWindow?: string } = {}): Promise<any> {
+    try {
+      const fileContent = batchJobs.map(job => JSON.stringify(job)).join('\n');
+      const fileBlob = new Blob([fileContent], { type: 'application/jsonl' });
+      const formData = new FormData();
+      formData.append('purpose', 'batch');
+      formData.append('file', fileBlob);
+
+      // Upload file
+      const fileResponse = await fetch(`${this.baseUrl}/files`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.apiKey}`
+        },
+        body: formData
+      });
+
+      if (!fileResponse.ok) {
+        const errorData = await fileResponse.json();
+        throw new Error(`Groq API file upload error (${fileResponse.status}): ${errorData.error?.message || "Unknown error"}`);
+      }
+
+      const fileData = await fileResponse.json();
+      const fileId = fileData.id;
+
+      // Create batch
+      const batchResponse = await fetch(`${this.baseUrl}/batches`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          input_file_id: fileId,
+          endpoint: '/v1/chat/completions',
+          completion_window: options.completionWindow || '24h'
+        })
+      });
+
+      if (!batchResponse.ok) {
+        const errorData = await batchResponse.json();
+        throw new Error(`Groq API batch creation error (${batchResponse.status}): ${errorData.error?.message || "Unknown error"}`);
+      }
+
+      return await batchResponse.json();
+    } catch (error) {
+      console.error("Error submitting batch to Groq:", error);
+      throw new Error(`Failed to submit batch: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

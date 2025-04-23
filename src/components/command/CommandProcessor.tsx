@@ -18,9 +18,11 @@ const CommandProcessor: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [response, setResponse] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isAgentMode, setIsAgentMode] = useState(false);
   const responseRef = useRef<HTMLDivElement>(null);
   const [isGroqConfigured, setIsGroqConfigured] = useState(false);
   const [isScreenpipeConfigured, setIsScreenpipeConfigured] = useState(false);
+  const [screenContext, setScreenContext] = useState<any>(null);
 
   // Check if services are configured
   useEffect(() => {
@@ -33,6 +35,7 @@ const CommandProcessor: React.FC = () => {
         .then(connected => {
           if (connected) {
             toast.success("Connected to Screenpipe Terminator");
+            updateScreenContext();
           }
         })
         .catch(error => {
@@ -41,6 +44,18 @@ const CommandProcessor: React.FC = () => {
         });
     }
   }, []);
+
+  // Update screen context if Screenpipe is connected
+  const updateScreenContext = async () => {
+    if (screenpipeService.isConnected()) {
+      try {
+        const context = await screenpipeService.getScreenContext();
+        setScreenContext(context);
+      } catch (error) {
+        console.error("Error getting screen context:", error);
+      }
+    }
+  };
 
   // Handle command submission
   const handleSendCommand = async () => {
@@ -53,7 +68,20 @@ const CommandProcessor: React.FC = () => {
     try {
       // Process command with Groq
       if (isGroqConfigured) {
-        const result = await groqService.processCommand(command);
+        // Update screen context to provide more information to the AI
+        if (screenpipeService.isConnected()) {
+          await updateScreenContext();
+        }
+        
+        let result: string;
+        
+        // Use agent model if agent mode is enabled
+        if (isAgentMode) {
+          result = await groqService.processAgentCommand(command);
+        } else {
+          result = await groqService.processCommand(command);
+        }
+        
         setResponse(result);
         
         // Attempt to execute automation task if Screenpipe is configured
@@ -69,6 +97,8 @@ const CommandProcessor: React.FC = () => {
               
               if (taskResult.success) {
                 toast.success("Task completed successfully");
+                // Update screen context after task execution
+                updateScreenContext();
               } else {
                 toast.error(`Task failed: ${taskResult.error}`);
               }
@@ -103,11 +133,14 @@ const CommandProcessor: React.FC = () => {
         parameters: {
           subject: "Generated Email",
           body: response
+        },
+        errorHandling: {
+          retries: 2
         }
       };
     } else if (originalCommand.toLowerCase().includes("schedule") || originalCommand.toLowerCase().includes("calendar")) {
       return {
-        type: "app", // Changed from "calendar" to "app" to match the type definition
+        type: "app", // Changed from "calendar" to match the type definition
         action: "create_event",
         parameters: {
           title: "New Event",
@@ -194,6 +227,9 @@ const CommandProcessor: React.FC = () => {
       
       // In a real implementation, you might want to process or display the captured screen
       console.log("Screen captured:", screenImage);
+      
+      // Update screen context after capturing
+      updateScreenContext();
     } catch (error) {
       toast.error("Failed to capture screen");
       console.error(error);
@@ -238,58 +274,90 @@ const CommandProcessor: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex space-x-2">
-            <Input
-              placeholder="Cecilia, help me with..."
-              value={command}
-              onChange={(e) => setCommand(e.target.value)}
-              className="flex-1 bg-jarvis-dark/80 border-jarvis-border text-jarvis-light"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSendCommand();
-              }}
-              disabled={isProcessing || isListening}
-            />
-            <Button 
-              variant="outline"
-              size="icon"
-              type="button"
-              onClick={isListening ? stopListening : startListening}
-              className={cn(
-                "relative bg-jarvis-dark/80 border-jarvis-primary/30 hover:bg-jarvis-blue/20",
-                isListening ? "mic-pulse mic-active" : ""
-              )}
-              disabled={isProcessing}
-            >
-              {isListening ? <StopCircle className="h-4 w-4 text-groqflow-error" /> : <Mic className="h-4 w-4" />}
-            </Button>
-            <Button 
-              variant="outline"
-              size="icon"
-              type="button"
-              onClick={handleCaptureScreen}
-              className="bg-jarvis-dark/80 border-jarvis-primary/30 hover:bg-jarvis-blue/20"
-              disabled={isProcessing || isListening || !isScreenpipeConfigured}
-            >
-              <Camera className="h-4 w-4" />
-            </Button>
-            <Button 
-              onClick={handleSendCommand}
-              disabled={!command.trim() || isProcessing || isListening}
-              className="bg-jarvis-blue hover:bg-jarvis-sky text-white"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Send
-            </Button>
-          </div>
-          
-          {!isGroqConfigured && (
-            <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded text-yellow-400 text-xs">
-              <div className="flex items-center gap-2">
-                <Cog className="h-4 w-4" />
-                <span>Groq API not configured. Add your API key in Settings.</span>
+          <div className="flex flex-col space-y-2">
+            <div className="flex space-x-2">
+              <Input
+                placeholder="Cecilia, help me with..."
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                className="flex-1 bg-jarvis-dark/80 border-jarvis-border text-jarvis-light"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSendCommand();
+                }}
+                disabled={isProcessing || isListening}
+              />
+              <Button 
+                variant="outline"
+                size="icon"
+                type="button"
+                onClick={isListening ? stopListening : startListening}
+                className={cn(
+                  "relative bg-jarvis-dark/80 border-jarvis-primary/30 hover:bg-jarvis-blue/20",
+                  isListening ? "mic-pulse mic-active" : ""
+                )}
+                disabled={isProcessing}
+              >
+                {isListening ? <StopCircle className="h-4 w-4 text-groqflow-error" /> : <Mic className="h-4 w-4" />}
+              </Button>
+              <Button 
+                variant="outline"
+                size="icon"
+                type="button"
+                onClick={handleCaptureScreen}
+                className="bg-jarvis-dark/80 border-jarvis-primary/30 hover:bg-jarvis-blue/20"
+                disabled={isProcessing || isListening || !isScreenpipeConfigured}
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
+              <Button 
+                onClick={handleSendCommand}
+                disabled={!command.trim() || isProcessing || isListening}
+                className="bg-jarvis-blue hover:bg-jarvis-sky text-white"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Send
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center">
+                <label htmlFor="agent-mode" className="text-xs text-jarvis-secondary mr-2">
+                  Agent Mode
+                </label>
+                <input
+                  id="agent-mode"
+                  type="checkbox"
+                  checked={isAgentMode}
+                  onChange={() => setIsAgentMode(!isAgentMode)}
+                  className="h-3.5 w-3.5 rounded border-jarvis-border bg-jarvis-dark/80 text-jarvis-blue"
+                />
+                {isAgentMode && (
+                  <div className="ml-2 text-xs text-jarvis-secondary">
+                    Using Groq's compound-beta with web search & code execution
+                  </div>
+                )}
               </div>
             </div>
-          )}
+            
+            {!isGroqConfigured && (
+              <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded text-yellow-400 text-xs">
+                <div className="flex items-center gap-2">
+                  <Cog className="h-4 w-4" />
+                  <span>Groq API not configured. Add your API key in Settings.</span>
+                </div>
+              </div>
+            )}
+            
+            {/* Show screen context if available */}
+            {screenContext && (
+              <div className="mt-2 p-2 bg-blue-900/20 border border-blue-700/30 rounded text-blue-300 text-xs">
+                <div className="flex items-center gap-2">
+                  <Computer className="h-4 w-4" />
+                  <span>Active app: {screenContext.activeApp} ({screenContext.activeWindow})</span>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
       
