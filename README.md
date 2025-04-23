@@ -3,12 +3,16 @@
 
 GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomously executing tasks such as email drafting, social media management, data analysis, and proactive reminders. The assistant leverages Groq's AI capabilities for natural language processing and Screenpipe's Terminator for desktop automation.
 
+---
+
 ## Features
 
 - **Voice-First Interaction**: Natural language commands in multiple languages
 - **Screen Context Intelligence**: Live screen analysis and auto-error recovery
 - **Cross-App Automation**: Social media management, data analysis, and proactive reminders
 - **Security & Privacy**: Local processing and automatic redaction of sensitive information
+
+---
 
 ## Tech Stack
 
@@ -19,6 +23,8 @@ GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomo
   - Groq AI for natural language processing
   - Screenpipe's Terminator for desktop automation
 
+---
+
 ## Prerequisites
 
 - Node.js (v16 or higher)
@@ -26,16 +32,18 @@ GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomo
 - Groq API Key ([Get one here](https://console.groq.com))
 - Screenpipe API Key ([Get one here](https://docs.screenpi.pe/))
 
+---
+
 ## Installation
 
 1. Clone the repository:
-   ```
+   ```bash
    git clone https://github.com/yourusername/groqflow.git
    cd groqflow
    ```
 
 2. Install dependencies:
-   ```
+   ```bash
    npm install
    ```
 
@@ -45,84 +53,115 @@ GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomo
    VITE_SCREENPIPE_API_KEY=your_screenpipe_api_key
    ```
 
-4. Start the development server:
-   ```
-   npm run dev
-   ```
+---
 
-## API Integration
+## Running the Application
 
-### Groq AI Integration
+Start the development server:
 
-The application uses Groq's API for natural language processing. You'll need to replace the placeholder API key in `src/services/groqService.ts` with your actual Groq API key.
-
-For proper integration, refer to the [Groq API documentation](https://console.groq.com/docs/quickstart).
-
-Example usage:
-```typescript
-import { groqService } from "@/services/groqService";
-
-// Process a command
-const result = await groqService.processCommand("Draft an email to the team about the upcoming meeting");
-
-// Transcribe audio
-const audioBlob = await recordAudio();
-const transcription = await groqService.transcribeAudio(audioBlob);
+```bash
+npm run dev
 ```
 
-### Screenpipe Integration
+Open your browser at `http://localhost:3000` (or as shown in your terminal) to access GroqFlow.
 
-Screenpipe's Terminator is used for desktop automation tasks. Replace the placeholder API key in `src/services/screenpipeService.ts` with your actual Screenpipe API key.
+---
 
-For proper integration, refer to the [Screenpipe SDK Reference](https://docs.screenpi.pe/sdk-reference).
+## Usage Guide
 
-Example usage:
-```typescript
-import { screenpipeService } from "@/services/screenpipeService";
+### Voice Commands
 
-// Capture screen
-const screenImage = await screenpipeService.captureScreen();
+- Click the microphone button in the Command Center to start voice interaction.
+- Speak commands naturally, e.g.:
+  - "Email the Q1 report to the CFO and highlight key metrics."
+  - "Schedule a meeting with the marketing team for tomorrow at 10 AM."
+  - "Analyze this CSV and send insights to the team."
+- The assistant supports English and Hindi language voice commands.
 
-// Execute an automation task
-await screenpipeService.executeTask("openWebBrowser", { url: "https://example.com" });
-```
+### Text Commands
 
-## Application Structure
+- Enter commands manually in the command input panel.
+- Use natural language phrases similar to voice commands.
+- Press enter or click submit to process commands.
 
-- `/src/components`: UI components
-  - `/layout`: Layout components (Sidebar, Header, MainLayout)
-  - `/dashboard`: Dashboard-specific components
-  - `/ui`: Shadcn UI components
-- `/src/pages`: Application pages (Index, Tasks, Settings)
-- `/src/services`: API services (groqService, screenpipeService)
-- `/src/lib`: Utility functions
+### Command Center Tabs
 
-## Scaling the Application
+- **Commands**: Interact with Cecilia via voice or text.
+- **Assistant**: Planned AI Assistant features for brainstorming, detailed queries, and drafting.
+- **Automation**: Planned desktop automation controls for cross-app workflows.
+- **History**: Planned command interaction history viewing and replay.
 
-To scale the application for production use, consider the following:
+### Task Automation
 
-1. **Backend Integration**: Add a proper backend server (Node.js/Express) for processing sensitive operations and storing data securely.
+- GroqFlow integrates with Screenpipe's Terminator to automate desktop tasks.
+- Ensure the Screenpipe Terminator agent is installed and running on your machine.
+- Use command phrases in the Command Center to trigger automation (e.g., open applications, fill forms).
 
-2. **Database**: Implement a database solution (MongoDB, PostgreSQL) for storing user preferences, task history, and workflow templates.
+---
 
-3. **Authentication**: Add user authentication and authorization to secure the application.
+## API Integrations
 
-4. **WebSocket Support**: Implement WebSocket connections for real-time updates and notifications.
+### Groq AI
 
-5. **Error Handling**: Enhance error handling and implement proper logging mechanisms.
+Groq provides the natural language processing and chat completions backbone.
 
-6. **Testing**: Add comprehensive unit and integration tests to ensure reliability.
+- Process chat and voice commands.
+- Transcribe audio files.
+- Synthesize text-to-speech audio.
+- Access vision and reasoning APIs.
 
-7. **CI/CD Pipeline**: Set up continuous integration and deployment pipelines.
+For details, see [Groq API docs](https://console.groq.com/docs/overview).
 
-## Security Considerations
+### Screenpipe Terminator
 
-- Store API keys securely and never expose them in client-side code.
-- Implement proper authentication and authorization.
-- Use HTTPS for all communication.
-- Implement rate limiting for API calls.
-- Regularly audit dependencies for security vulnerabilities.
+Handles desktop automation and screen capture.
+
+- Controls apps and workflows on your desktop.
+- Capture screenshots for contextual commands.
+- Auto-error recovery for crashed apps.
+
+For details, see [Screenpipe Terminator JS SDK](https://docs.screenpi.pe/terminator/js-sdk-reference).
+
+---
+
+## Configuration
+
+- API keys must be set in `.env` as `VITE_GROQ_API_KEY` and `VITE_SCREENPIPE_API_KEY`.
+- The app reads keys at runtime for secure API communication.
+- Customizing assistant voice and language settings can be done via settings page (planned).
+
+---
+
+## Security & Privacy
+
+- Voice and screen data are processed locally or securely via APIs.
+- No cloud storage for sensitive user audio or screen data.
+- Sensitive info in screen captures is automatically redacted.
+
+---
+
+## Future Enhancements
+
+- AI Assistant capabilities (task drafting, brainstorming).
+- Full desktop automation workflows with error handling.
+- Interactive workflow editor with drag-and-drop.
+- User interaction history and analytics.
+- Notification center and system status overview.
+- Multi-language support enhancements.
+
+---
+
+## Contributing
+
+Contributions are welcome! Please submit issues or pull requests.
+
+---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License
+
+---
+
+Thank you for using GroqFlow! Your intelligent workflow assistant.
+
