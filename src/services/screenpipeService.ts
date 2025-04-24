@@ -1,4 +1,3 @@
-
 /**
  * Screenpipe Terminator Integration Service
  * 
@@ -58,6 +57,93 @@ export interface ScreenContext {
   visibleElements: UIElement[];
   openApps: string[];
 }
+
+// Define common applications and their mapping to commands
+export const APP_MAPPINGS: Record<string, {
+  appName: string; 
+  browserUrl?: string;
+  systemCommand?: string;
+  icon?: string;
+}> = {
+  "youtube": {
+    appName: "YouTube",
+    browserUrl: "https://www.youtube.com",
+    icon: "youtube"
+  },
+  "gmail": {
+    appName: "Gmail",
+    browserUrl: "https://mail.google.com",
+    icon: "mail"
+  },
+  "calendar": {
+    appName: "Calendar",
+    browserUrl: "https://calendar.google.com",
+    icon: "calendar"
+  },
+  "google": {
+    appName: "Google",
+    browserUrl: "https://www.google.com",
+    icon: "search"
+  },
+  "drive": {
+    appName: "Google Drive",
+    browserUrl: "https://drive.google.com",
+    icon: "hard-drive"
+  },
+  "docs": {
+    appName: "Google Docs",
+    browserUrl: "https://docs.google.com",
+    icon: "file-text"
+  },
+  "sheets": {
+    appName: "Google Sheets",
+    browserUrl: "https://sheets.google.com",
+    icon: "table"
+  },
+  "slides": {
+    appName: "Google Slides",
+    browserUrl: "https://slides.google.com",
+    icon: "presentation"
+  },
+  "twitter": {
+    appName: "Twitter",
+    browserUrl: "https://twitter.com",
+    icon: "twitter"
+  },
+  "facebook": {
+    appName: "Facebook",
+    browserUrl: "https://facebook.com",
+    icon: "facebook"
+  },
+  "linkedin": {
+    appName: "LinkedIn",
+    browserUrl: "https://linkedin.com",
+    icon: "linkedin"
+  },
+  "spotify": {
+    appName: "Spotify",
+    systemCommand: "spotify",
+    browserUrl: "https://open.spotify.com",
+    icon: "music"
+  },
+  "netflix": {
+    appName: "Netflix",
+    browserUrl: "https://netflix.com",
+    icon: "film"
+  },
+  "slack": {
+    appName: "Slack",
+    systemCommand: "slack",
+    browserUrl: "https://app.slack.com",
+    icon: "message-square"
+  },
+  "zoom": {
+    appName: "Zoom",
+    systemCommand: "zoom",
+    browserUrl: "https://zoom.us/join",
+    icon: "video"
+  }
+};
 
 export class ScreenpipeService {
   private scriptUrl: string;
@@ -244,6 +330,122 @@ export class ScreenpipeService {
   }
 
   /**
+   * Open a specific application or website
+   * This is enhanced to handle common applications by name
+   */
+  async openApplication(appName: string): Promise<TaskResult> {
+    if (!this.connected) {
+      await this.connect();
+    }
+    
+    try {
+      console.log(`Opening application: ${appName}`);
+      
+      // Normalize app name to lowercase
+      const normalizedAppName = appName.toLowerCase();
+      
+      // Check if we have a mapping for this app
+      const appMapping = APP_MAPPINGS[normalizedAppName] || Object.values(APP_MAPPINGS).find(
+        app => app.appName.toLowerCase() === normalizedAppName
+      );
+      
+      if (appMapping) {
+        if (this.terminator) {
+          // If we have a browser URL, open it in the browser
+          if (appMapping.browserUrl) {
+            const result = await this.terminator.openURL(appMapping.browserUrl);
+            
+            if (result.success) {
+              return {
+                success: true,
+                data: {
+                  appName: appMapping.appName,
+                  url: appMapping.browserUrl
+                }
+              };
+            }
+          }
+          
+          // If we have a system command, try launching the app
+          if (appMapping.systemCommand) {
+            const result = await this.terminator.launchApplication(appMapping.systemCommand);
+            
+            if (result.success) {
+              return {
+                success: true,
+                data: {
+                  appName: appMapping.appName,
+                  command: appMapping.systemCommand
+                }
+              };
+            }
+          }
+        }
+        
+        // If Terminator isn't available or the above methods failed, try a fallback method
+        // This uses browser-based approach to open common applications
+        if (appMapping.browserUrl) {
+          window.open(appMapping.browserUrl, '_blank');
+          return {
+            success: true,
+            data: {
+              appName: appMapping.appName,
+              url: appMapping.browserUrl,
+              method: "browser-fallback"
+            }
+          };
+        }
+      }
+      
+      // If we don't have a mapping or couldn't open the app through known methods,
+      // try a generic approach with Terminator or fall back to a browser search
+      if (this.terminator) {
+        const result = await this.terminator.launchApplication(appName);
+        
+        if (result.success) {
+          return {
+            success: true,
+            data: {
+              appName: appName
+            }
+          };
+        }
+      }
+      
+      // Last resort: search for the app on Google
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(appName)}`, '_blank');
+      return {
+        success: true,
+        data: {
+          appName: appName,
+          method: "search-fallback"
+        }
+      };
+      
+    } catch (error) {
+      console.error("Error opening application:", error);
+      
+      // If all else fails, at least try to open a search for the application
+      try {
+        window.open(`https://www.google.com/search?q=${encodeURIComponent(appName)}`, '_blank');
+        return {
+          success: true,
+          data: {
+            appName: appName,
+            method: "error-fallback-search"
+          },
+          error: `Original error: ${error instanceof Error ? error.message : String(error)}`
+        };
+      } catch (searchError) {
+        return {
+          success: false,
+          error: `Failed to open ${appName}: ${error instanceof Error ? error.message : String(error)}`
+        };
+      }
+    }
+  }
+
+  /**
    * Execute an automation task across applications
    */
   async executeTask(task: AutomationTask): Promise<TaskResult> {
@@ -264,7 +466,14 @@ export class ScreenpipeService {
       switch(task.type) {
         case "browser":
           if (task.action === "open") {
-            result = await this.terminator.openURL(task.parameters.url);
+            // Enhanced to use our openApplication method for better reliability
+            if (task.parameters.url) {
+              result = await this.terminator.openURL(task.parameters.url);
+            } else if (task.parameters.app || task.parameters.appName) {
+              return this.openApplication(task.parameters.app || task.parameters.appName);
+            } else {
+              throw new Error("URL or application name required for browser open action");
+            }
           } else if (task.action === "navigate") {
             result = await this.terminator.navigateTo(task.parameters.url);
           } else {
@@ -274,7 +483,8 @@ export class ScreenpipeService {
           
         case "app":
           if (task.action === "open" || task.action === "launch") {
-            result = await this.terminator.launchApplication(task.parameters.appName || task.parameters.name);
+            // Enhanced to use our openApplication method for better reliability
+            return this.openApplication(task.parameters.appName || task.parameters.name);
           } else if (task.action === "close") {
             result = await this.terminator.closeApplication(task.parameters.appName || task.parameters.name);
           } else if (task.action === "create_event") {

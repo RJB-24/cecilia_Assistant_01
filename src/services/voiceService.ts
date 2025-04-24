@@ -5,6 +5,7 @@
  */
 
 import { groqService } from './groqService';
+import { noteService } from './noteService';
 import '../lib/types'; // Import the types to make them available
 
 export interface VoiceServiceOptions {
@@ -30,6 +31,9 @@ export class VoiceService {
   private onError?: (error: string) => void;
   private interimTranscript = '';
   private finalTranscript = '';
+  private audioRecorder: MediaRecorder | null = null;
+  private audioChunks: BlobPart[] = [];
+  private isRecordingForNotes = false;
 
   constructor(options: VoiceServiceOptions = {}) {
     this.language = options.language || 'en-US';
@@ -135,6 +139,83 @@ export class VoiceService {
   }
 
   /**
+   * Start recording audio for note-taking
+   * Returns a MediaStream that can be used for visualization or further processing
+   */
+  async startRecordingForNotes(): Promise<MediaStream> {
+    if (this.isRecordingForNotes) {
+      throw new Error('Already recording for notes');
+    }
+    
+    try {
+      // Request audio permission
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Create a new MediaRecorder
+      this.audioRecorder = new MediaRecorder(stream);
+      this.audioChunks = [];
+      
+      // Listen for dataavailable event to collect audio chunks
+      this.audioRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+      
+      // Start recording
+      this.audioRecorder.start(1000); // Collect data in 1-second chunks
+      this.isRecordingForNotes = true;
+      
+      console.log('Started recording audio for notes');
+      return stream;
+    } catch (error) {
+      console.error('Error starting audio recording:', error);
+      throw new Error(`Failed to start recording: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
+  /**
+   * Stop recording audio and process notes using Groq AI
+   */
+  async stopRecordingAndProcessNotes(title: string): Promise<any> {
+    if (!this.isRecordingForNotes || !this.audioRecorder) {
+      throw new Error('Not currently recording for notes');
+    }
+    
+    return new Promise((resolve, reject) => {
+      // Set up the onstop handler before stopping
+      this.audioRecorder!.onstop = async () => {
+        try {
+          // Create a blob from the audio chunks
+          const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+          
+          // In a real implementation, this would send the audio to Groq for transcription and note generation
+          // For now, we'll simulate this process
+          console.log('Processing audio for notes, size:', audioBlob.size);
+          
+          // Use noteService to generate notes from media
+          const notes = await noteService.generateNotesFromMedia(audioBlob, {
+            title,
+            format: 'outline'
+          });
+          
+          this.isRecordingForNotes = false;
+          this.audioChunks = [];
+          this.audioRecorder = null;
+          
+          resolve(notes);
+        } catch (error) {
+          console.error('Error processing notes:', error);
+          reject(error);
+        }
+      };
+      
+      // Stop the recorder - this will trigger the onstop handler
+      this.audioRecorder!.stop();
+    });
+  }
+
+  /**
    * Process voice command using Groq's NLP capabilities
    */
   async processCommand(text: string): Promise<VoiceCommand> {
@@ -147,7 +228,7 @@ export class VoiceService {
       if (groqService.isConfigured()) {
         const response = await groqService.processCommand(text);
         
-        // Simple intent parsing from Groq's response
+        // Enhanced intent parsing from Groq's response
         if (response.toLowerCase().includes('email')) {
           intent = 'send_email';
           
@@ -160,6 +241,25 @@ export class VoiceService {
           intent = 'create_calendar_event';
         } else if (response.toLowerCase().includes('analyze')) {
           intent = 'analyze_data';
+        } else if (response.toLowerCase().includes('note') || 
+                  response.toLowerCase().includes('transcribe')) {
+          intent = 'take_notes';
+          
+          // Extract meeting or video title if available
+          const titleMatches = response.match(/for\s+([a-zA-Z0-9\s]+)/i);
+          if (titleMatches && titleMatches[1]) {
+            entities.title = titleMatches[1].trim();
+          }
+        } else if (response.toLowerCase().includes('open') || 
+                  response.toLowerCase().includes('launch') || 
+                  response.toLowerCase().includes('start')) {
+          intent = 'open_application';
+          
+          // Extract app name if available
+          const appMatches = response.match(/open\s+([a-zA-Z0-9\s]+)/i);
+          if (appMatches && appMatches[1]) {
+            entities.appName = appMatches[1].trim();
+          }
         }
         
         return {
@@ -188,6 +288,22 @@ export class VoiceService {
           }
         } else if (text.toLowerCase().includes('analyze') || text.toLowerCase().includes('data')) {
           intent = 'analyze_data';
+        } else if (text.toLowerCase().includes('note') || text.toLowerCase().includes('transcribe')) {
+          intent = 'take_notes';
+          
+          // Extract meeting or video title if available
+          const titleMatches = text.match(/for\s+([a-zA-Z0-9\s]+)/i);
+          if (titleMatches && titleMatches[1]) {
+            entities.title = titleMatches[1].trim();
+          }
+        } else if (text.toLowerCase().includes('open') || text.toLowerCase().includes('launch')) {
+          intent = 'open_application';
+          
+          // Extract app name if available
+          const appMatches = text.match(/open\s+([a-zA-Z0-9\s]+)/i);
+          if (appMatches && appMatches[1]) {
+            entities.appName = appMatches[1].trim();
+          }
         }
         
         return {
@@ -213,6 +329,13 @@ export class VoiceService {
    */
   isListening(): boolean {
     return this.listening;
+  }
+  
+  /**
+   * Check if currently recording for notes
+   */
+  isRecordingNotes(): boolean {
+    return this.isRecordingForNotes;
   }
   
   /**

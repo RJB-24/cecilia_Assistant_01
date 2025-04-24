@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, StopCircle, Send, Camera, Cog, Lightbulb, Computer } from "lucide-react";
+import { Mic, StopCircle, Send, Camera, Cog, Lightbulb, Computer, Calendar, Youtube, Video, Note } from "lucide-react";
 import { groqService } from "@/services/groqService";
-import { screenpipeService } from "@/services/screenpipeService";
+import { screenpipeService, APP_MAPPINGS } from "@/services/screenpipeService";
 import { voiceService } from "@/services/voiceService";
+import { noteService } from "@/services/noteService";
 import { cn } from "@/lib/utils";
 import { AutomationTask } from "@/services/screenpipeService";
 
@@ -24,12 +24,10 @@ const CommandProcessor: React.FC = () => {
   const [isScreenpipeConfigured, setIsScreenpipeConfigured] = useState(false);
   const [screenContext, setScreenContext] = useState<any>(null);
 
-  // Check if services are configured
   useEffect(() => {
     setIsGroqConfigured(groqService.isConfigured());
     setIsScreenpipeConfigured(screenpipeService.isConfigured());
     
-    // Attempt to connect to Screenpipe if configured
     if (screenpipeService.isConfigured() && !screenpipeService.isConnected()) {
       screenpipeService.connect()
         .then(connected => {
@@ -45,7 +43,6 @@ const CommandProcessor: React.FC = () => {
     }
   }, []);
 
-  // Update screen context if Screenpipe is connected
   const updateScreenContext = async () => {
     if (screenpipeService.isConnected()) {
       try {
@@ -57,7 +54,141 @@ const CommandProcessor: React.FC = () => {
     }
   };
 
-  // Handle command submission
+  const handleAppOpeningCommand = async (commandText: string): Promise<boolean> => {
+    const openAppPattern = /\b(?:open|launch|start)\s+([a-zA-Z\s]+)/i;
+    const match = commandText.match(openAppPattern);
+    
+    if (match) {
+      const appName = match[1].trim().toLowerCase();
+      
+      const knownApp = Object.keys(APP_MAPPINGS).find(
+        key => key === appName || appName.includes(key)
+      );
+      
+      if (knownApp || appName.includes("youtube") || appName.includes("gmail") || appName.includes("zoom")) {
+        toast.info(`Opening ${appName}...`);
+        
+        try {
+          if (isScreenpipeConfigured) {
+            const result = await screenpipeService.openApplication(appName);
+            
+            if (result.success) {
+              toast.success(`Successfully opened ${appName}`);
+              setResponse(`I've opened ${appName} for you. Is there anything specific you'd like to do with it?`);
+              return true;
+            }
+          }
+          
+          if (appName.includes("youtube")) {
+            window.open("https://www.youtube.com", "_blank");
+            setResponse(`I've opened YouTube in a new browser tab.`);
+            toast.success("Opened YouTube");
+            return true;
+          } else if (appName.includes("gmail")) {
+            window.open("https://mail.google.com", "_blank");
+            setResponse(`I've opened Gmail in a new browser tab.`);
+            toast.success("Opened Gmail");
+            return true;
+          } else if (appName.includes("zoom")) {
+            window.open("https://zoom.us/join", "_blank");
+            setResponse(`I've opened Zoom in a new browser tab.`);
+            toast.success("Opened Zoom");
+            return true;
+          }
+        } catch (error) {
+          console.error("Error opening application:", error);
+          toast.error(`Failed to open ${appName}`);
+          setResponse(`I tried to open ${appName}, but encountered an error. Please make sure the application is installed or try opening it manually.`);
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  };
+
+  const handleNoteTakingCommand = async (commandText: string): Promise<boolean> => {
+    if (commandText.toLowerCase().includes("take notes") || 
+        commandText.toLowerCase().includes("meeting notes") ||
+        (commandText.toLowerCase().includes("notes") && 
+          (commandText.toLowerCase().includes("video") || 
+           commandText.toLowerCase().includes("meeting")))) {
+      
+      toast.info("I can help take notes! For actual note taking, I'll need access to your audio.");
+      
+      setResponse(`I'd be happy to take notes for your meeting or video! To do this, I'll need:
+
+1. Permission to access your audio
+2. The meeting or video to be playing on your device
+
+For the best results:
+- Make sure the audio is clear and at a good volume
+- For videos, pause occasionally to allow processing
+- For meetings, try to minimize background noise
+
+When you're ready, say "Start taking notes for [meeting/video name]".`);
+      
+      return true;
+    }
+    
+    const startTakingNotesPattern = /\b(?:start|begin)\s+(?:taking)\s+notes\s+(?:for|on)\s+([a-zA-Z0-9\s]+)/i;
+    const matchStart = commandText.match(startTakingNotesPattern);
+    
+    if (matchStart) {
+      const mediaName = matchStart[1].trim();
+      
+      toast.info(`Starting to take notes for "${mediaName}"...`);
+      
+      setResponse(`I'm now listening and taking notes for "${mediaName}". I'll continue until you say "Stop taking notes".
+
+In a real implementation, I would:
+1. Be transcribing the audio in real-time
+2. Processing the transcript with Groq's AI
+3. Generating structured notes automatically
+
+Since this is a demo, when you say "Stop taking notes", I'll generate some sample notes.`);
+      
+      sessionStorage.setItem("current_note_taking_media", mediaName);
+      
+      return true;
+    }
+    
+    if (commandText.toLowerCase().includes("stop taking notes")) {
+      const mediaName = sessionStorage.getItem("current_note_taking_media") || "your meeting";
+      
+      toast.success(`Finished taking notes for "${mediaName}"`);
+      
+      const mockNotes = `
+# Notes for "${mediaName}"
+
+## Key Points
+- Discussion of Q2 performance metrics
+- Review of new product features
+- Timeline for market launch in September
+- Budget allocation for marketing campaign
+
+## Action Items
+- Team leads to submit resource requirements by Friday
+- Schedule follow-up meeting with stakeholders
+- Prepare marketing materials for review
+- Update project timeline in project management tool
+
+## Decisions
+- Approved budget increase for development team
+- Selected Option B for the product packaging
+- Agreed on September 15th as the launch date
+      `;
+      
+      setResponse(`Here are your notes for "${mediaName}":\n\n${mockNotes}\n\nI've saved these notes and you can access them anytime from the Notes section.`);
+      
+      sessionStorage.removeItem("current_note_taking_media");
+      
+      return true;
+    }
+    
+    return false;
+  };
+
   const handleSendCommand = async () => {
     if (!command.trim()) return;
     
@@ -66,16 +197,27 @@ const CommandProcessor: React.FC = () => {
     toast.info("Processing command...");
     
     try {
-      // Process command with Groq
+      const isAppCommand = await handleAppOpeningCommand(command);
+      if (isAppCommand) {
+        setIsProcessing(false);
+        setCommand("");
+        return;
+      }
+      
+      const isNoteCommand = await handleNoteTakingCommand(command);
+      if (isNoteCommand) {
+        setIsProcessing(false);
+        setCommand("");
+        return;
+      }
+      
       if (isGroqConfigured) {
-        // Update screen context to provide more information to the AI
         if (screenpipeService.isConnected()) {
           await updateScreenContext();
         }
         
         let result: string;
         
-        // Use agent model if agent mode is enabled
         if (isAgentMode) {
           result = await groqService.processAgentCommand(command);
         } else {
@@ -84,9 +226,7 @@ const CommandProcessor: React.FC = () => {
         
         setResponse(result);
         
-        // Attempt to execute automation task if Screenpipe is configured
         if (isScreenpipeConfigured && result) {
-          // Extract potential automation task from the response
           const automationTask = extractAutomationTask(result, command);
           
           if (automationTask) {
@@ -97,7 +237,6 @@ const CommandProcessor: React.FC = () => {
               
               if (taskResult.success) {
                 toast.success("Task completed successfully");
-                // Update screen context after task execution
                 updateScreenContext();
               } else {
                 toast.error(`Task failed: ${taskResult.error}`);
@@ -109,7 +248,6 @@ const CommandProcessor: React.FC = () => {
           }
         }
       } else {
-        // Fallback if Groq is not configured
         setResponse(`I'd process "${command}" with Groq API, but it's not configured yet. Please add your Groq API key in Settings.`);
         toast.warning("Groq API not configured");
       }
@@ -122,11 +260,11 @@ const CommandProcessor: React.FC = () => {
       setCommand("");
     }
   };
-  
-  // Extract potential automation task from AI response
+
   const extractAutomationTask = (response: string, originalCommand: string): AutomationTask | null => {
-    // Simple heuristic to detect potential tasks
-    if (originalCommand.toLowerCase().includes("email")) {
+    if (originalCommand.toLowerCase().includes("email") || 
+        originalCommand.toLowerCase().includes("send") ||
+        originalCommand.toLowerCase().includes("message")) {
       return {
         type: "email",
         action: "compose",
@@ -138,9 +276,11 @@ const CommandProcessor: React.FC = () => {
           retries: 2
         }
       };
-    } else if (originalCommand.toLowerCase().includes("schedule") || originalCommand.toLowerCase().includes("calendar")) {
+    } else if (originalCommand.toLowerCase().includes("schedule") || 
+               originalCommand.toLowerCase().includes("calendar") ||
+               originalCommand.toLowerCase().includes("meeting")) {
       return {
-        type: "app", // Changed from "calendar" to match the type definition
+        type: "app", 
         action: "create_event",
         parameters: {
           title: "New Event",
@@ -148,21 +288,26 @@ const CommandProcessor: React.FC = () => {
           startTime: new Date().toISOString()
         }
       };
-    } else if (originalCommand.toLowerCase().includes("browser") || originalCommand.toLowerCase().includes("open")) {
+    } else if (originalCommand.toLowerCase().includes("browser") || 
+              originalCommand.toLowerCase().includes("open") || 
+              originalCommand.toLowerCase().includes("visit") ||
+              originalCommand.toLowerCase().includes("go to")) {
       const urlMatch = response.match(/https?:\/\/[^\s]+/);
+      const appMatch = originalCommand.match(/\b(?:open|launch|start)\s+([a-zA-Z\s]+)/i);
+      
       return {
         type: "browser",
         action: "open",
         parameters: {
-          url: urlMatch ? urlMatch[0] : "https://www.google.com"
+          url: urlMatch ? urlMatch[0] : undefined,
+          app: appMatch ? appMatch[1].trim() : undefined
         }
       };
     }
     
     return null;
   };
-  
-  // Start voice recognition
+
   const startListening = async () => {
     if (!voiceService.isSupported()) {
       toast.error("Speech recognition is not supported in your browser");
@@ -174,7 +319,6 @@ const CommandProcessor: React.FC = () => {
       await voiceService.start();
       toast.info("Cecilia is listening. Start speaking...");
       
-      // Timeout after 10 seconds of listening if no speech is detected
       const timeout = setTimeout(() => {
         if (voiceService.isListening()) {
           stopListening();
@@ -182,7 +326,6 @@ const CommandProcessor: React.FC = () => {
         }
       }, 10000);
       
-      // Clean up timeout on unmount
       return () => clearTimeout(timeout);
     } catch (error) {
       setIsListening(false);
@@ -190,8 +333,7 @@ const CommandProcessor: React.FC = () => {
       console.error(error);
     }
   };
-  
-  // Stop voice recognition
+
   const stopListening = async () => {
     if (isListening) {
       try {
@@ -211,8 +353,7 @@ const CommandProcessor: React.FC = () => {
       }
     }
   };
-  
-  // Capture screen with Screenpipe
+
   const handleCaptureScreen = async () => {
     if (!isScreenpipeConfigured) {
       toast.warning("Screenpipe is not configured. Please add your API key in Settings.");
@@ -225,18 +366,15 @@ const CommandProcessor: React.FC = () => {
       const screenImage = await screenpipeService.captureScreen();
       toast.success("Screen captured");
       
-      // In a real implementation, you might want to process or display the captured screen
       console.log("Screen captured:", screenImage);
       
-      // Update screen context after capturing
       updateScreenContext();
     } catch (error) {
       toast.error("Failed to capture screen");
       console.error(error);
     }
   };
-  
-  // Text-to-speech using Groq API
+
   const speakResponse = async () => {
     if (!isGroqConfigured || !response || isSpeaking) {
       return;
@@ -255,8 +393,7 @@ const CommandProcessor: React.FC = () => {
       console.error(error);
     }
   };
-  
-  // Scroll to bottom of response when it changes
+
   useEffect(() => {
     if (responseRef.current) {
       responseRef.current.scrollTop = responseRef.current.scrollHeight;
@@ -265,7 +402,6 @@ const CommandProcessor: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Command Input */}
       <Card className="jarvis-hologram">
         <CardHeader className="pb-2">
           <CardTitle className="text-xl font-bold jarvis-glow-text">Command Center</CardTitle>
@@ -337,6 +473,45 @@ const CommandProcessor: React.FC = () => {
                   </div>
                 )}
               </div>
+              
+              <div className="flex space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs flex items-center gap-1 px-2 text-jarvis-secondary hover:text-jarvis-light"
+                  onClick={() => {
+                    setCommand("Open YouTube");
+                    setTimeout(handleSendCommand, 100);
+                  }}
+                >
+                  <Youtube className="h-3.5 w-3.5" />
+                  <span>YouTube</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs flex items-center gap-1 px-2 text-jarvis-secondary hover:text-jarvis-light"
+                  onClick={() => {
+                    setCommand("Take notes for my meeting");
+                    setTimeout(handleSendCommand, 100);
+                  }}
+                >
+                  <Note className="h-3.5 w-3.5" />
+                  <span>Notes</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs flex items-center gap-1 px-2 text-jarvis-secondary hover:text-jarvis-light"
+                  onClick={() => {
+                    setCommand("Schedule a meeting");
+                    setTimeout(handleSendCommand, 100);
+                  }}
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>Meeting</span>
+                </Button>
+              </div>
             </div>
             
             {!isGroqConfigured && (
@@ -348,7 +523,6 @@ const CommandProcessor: React.FC = () => {
               </div>
             )}
             
-            {/* Show screen context if available */}
             {screenContext && (
               <div className="mt-2 p-2 bg-blue-900/20 border border-blue-700/30 rounded text-blue-300 text-xs">
                 <div className="flex items-center gap-2">
@@ -361,7 +535,6 @@ const CommandProcessor: React.FC = () => {
         </CardContent>
       </Card>
       
-      {/* Response Display */}
       {response && (
         <Card className="jarvis-hologram">
           <CardHeader className="pb-2">

@@ -1,3 +1,4 @@
+
 # GroqFlow Integrations Documentation
 
 This document provides technical details about how GroqFlow integrates with Groq AI and Screenpipe Terminator to create a powerful AI assistant.
@@ -7,11 +8,13 @@ This document provides technical details about how GroqFlow integrates with Groq
    - [Integration Architecture](#groq-integration-architecture)
    - [API Methods](#groq-api-methods)
    - [Models Used](#groq-models-used)
+   - [Advanced NLP Features](#advanced-nlp-features)
    - [Configuration](#groq-configuration)
 2. [Screenpipe Terminator Integration](#screenpipe-terminator-integration)
    - [Integration Architecture](#screenpipe-integration-architecture)
    - [API Methods](#screenpipe-api-methods)
    - [Automation Tasks](#automation-tasks)
+   - [Application Control](#application-control)
    - [Configuration](#screenpipe-configuration)
 3. [Combined Workflow](#combined-workflow)
 4. [Extending the Integrations](#extending-the-integrations)
@@ -47,6 +50,9 @@ The `groqService` provides the following key methods:
 #### Vision Processing
 - `processImageWithText(imageUrl: string, question: string)`: Process an image with a text query
 
+#### Note Taking
+- `generateNotesFromTranscript(transcript: string, options: NoteTakingOptions)`: Create structured notes from meeting/video transcripts
+
 ### Groq Models Used
 
 GroqFlow integrates with several Groq models:
@@ -60,37 +66,27 @@ GroqFlow integrates with several Groq models:
 | Text-to-Speech | playai-tts | Voice responses |
 | Vision | meta-llama/llama-4-scout-17b-16e-instruct | Image processing |
 
+### Advanced NLP Features
+
+GroqFlow leverages Groq's advanced NLP capabilities:
+
+1. **Intent Recognition**: Detects user's intentions from commands
+2. **Entity Extraction**: Identifies key information like names, dates, and locations
+3. **Contextual Understanding**: Maintains conversation history for coherent interactions
+4. **Language Generation**: Creates human-like text for emails, reports, and communications
+5. **Translation**: Supports multilingual voice commands and responses
+6. **Reasoning**: Uses step-by-step reasoning to solve complex problems
+7. **Automatic Note Taking**: Transcribes and summarizes meetings/videos into structured notes
+8. **Code Generation & Execution**: Writes and runs code to solve computational tasks
+
 ### Groq Configuration
 
-The Groq integration is configured via the Settings page:
+The Groq integration is configured via the Settings page, where users can:
 
-```typescript
-// Sample configuration code
-localStorage.setItem("GROQ_API_KEY", groqApiKey);
-localStorage.setItem("GROQ_MODEL", groqModel);
-localStorage.setItem("GROQ_TTS_VOICE", ttsVoice);
-
-groqService.setApiKey(groqApiKey);
-groqService.setModel(groqModel);
-```
-
-API calls are made using the Fetch API:
-
-```typescript
-const response = await fetch(`${this.baseUrl}/chat/completions`, {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${this.apiKey}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    model: this.model,
-    messages: messages,
-    temperature: options.temperature ?? 0.7,
-    // ... other parameters
-  }),
-});
-```
+1. Add their Groq API key
+2. Select preferred language models
+3. Choose voice settings for TTS
+4. Configure agent behavior
 
 ## Screenpipe Terminator Integration
 
@@ -122,6 +118,7 @@ The `screenpipeService` provides the following key methods:
 
 #### Automation
 - `executeTask(task: AutomationTask)`: Execute a defined automation task
+- `openApplication(appName: string)`: Open a specific application or website
 - `findElement(selector: string)`: Find a UI element on screen
 - `interactWithElement(elementId: string, action: string, parameters?)`: Interact with a UI element
 
@@ -141,76 +138,62 @@ export interface AutomationTask {
 }
 ```
 
-Example tasks include:
+### Application Control
 
-```typescript
-// Open a website
-const task = {
-  type: "browser",
-  action: "open",
-  parameters: {
-    url: "https://www.youtube.com"
-  }
-};
+GroqFlow can control various applications through Screenpipe:
 
-// Compose an email
-const task = {
-  type: "email",
-  action: "compose",
-  parameters: {
-    to: "recipient@example.com",
-    subject: "Meeting Agenda",
-    body: "Here's the agenda for our upcoming meeting..."
-  }
-};
-```
+1. **Web Browsers**: Open websites, navigate to URLs, fill forms
+2. **Email Clients**: Compose emails, read messages, attach files
+3. **Productivity Apps**: Create documents, spreadsheets, presentations
+4. **Media Apps**: Control YouTube, media players, streaming services
+5. **Communication**: Join video calls, send messages
+6. **System Apps**: File management, settings control
+
+The `APP_MAPPINGS` object in `screenpipeService.ts` maintains mappings between common application names and their URLs or system commands, enabling intelligent handling of app-opening requests.
 
 ### Screenpipe Configuration
 
 The Screenpipe integration requires:
 
 1. Installing the Terminator agent on the local machine
-2. Connecting to the agent from GroqFlow:
-
-```typescript
-// Example connection code
-async connect(): Promise<boolean> {
-  if (this.connected) return true;
-  
-  try {
-    if (!this.scriptLoaded) {
-      await this.loadSDK();
-    }
-    
-    if (!this.terminator) {
-      throw new Error("Terminator SDK not available");
-    }
-    
-    const result = await this.terminator.connect();
-    this.connected = result.success;
-    
-    return this.connected;
-  } catch (error) {
-    this.connected = false;
-    throw new Error(`Failed to connect to Screenpipe: ${error}`);
-  }
-}
-```
+2. Connecting to the agent from GroqFlow through `screenpipeService.connect()`
+3. Ensuring proper permissions for screen capture and application control
 
 ## Combined Workflow
 
 The power of GroqFlow comes from the combination of Groq AI and Screenpipe Terminator:
 
-1. User issues a voice command: "Email the quarterly report to the team"
+1. User issues a voice command: "Take notes for my team meeting"
 2. Voice service captures audio and sends to Groq Whisper for transcription
-3. Transcribed text is processed by Groq Llama model to understand intent
-4. GroqFlow identifies this as an email task with specific parameters
-5. Screenpipe Terminator opens email client and populates fields
-6. Screenpipe searches for the quarterly report document
-7. Email is drafted and shown to user for review/sending
-8. Task completion is reported back to GroqFlow
+3. Transcribed text is processed by Groq Llama model to understand intent (note-taking)
+4. GroqFlow starts recording meeting audio and sends it to Groq for transcription
+5. Transcription is processed to generate structured notes
+6. Notes are saved and presented to the user
+7. If requested, notes can be emailed to the team via Screenpipe automation
 
 This workflow combines natural language understanding with desktop automation for a seamless experience.
+
+Example workflows:
+
+### Opening Applications:
+1. User says: "Open YouTube"
+2. GroqFlow detects app-opening intent
+3. Screenpipe is used to open YouTube in a browser
+4. Visual confirmation is provided to the user
+
+### Automatic Note Taking:
+1. User says: "Take notes for my meeting with marketing"
+2. GroqFlow initiates audio capture
+3. Audio is transcribed using Groq Whisper
+4. Transcript is summarized using Groq AI
+5. Structured notes are generated and saved
+
+### Email Automation:
+1. User says: "Email the quarterly report to the team"
+2. GroqFlow uses Groq AI to understand the intent
+3. Screenpipe opens the email client
+4. Email is drafted with appropriate content
+5. User reviews before sending
 
 ## Extending the Integrations
 
