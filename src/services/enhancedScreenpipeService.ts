@@ -92,10 +92,14 @@ class EnhancedScreenpipeService {
   public async executeAction(actionType: string, params: any, timeout: number = this.defaultTimeout): Promise<any> {
     try {
       // Using executeTask instead of automate which doesn't exist
+      const splitAction = actionType.split('/');
+      const taskType = this.getValidTaskType(splitAction[0] || 'system');
+      const action = splitAction[1] || actionType;
+
       const result = await Promise.race([
         screenpipeService.executeTask({
-          type: actionType.split('/')[0] || 'system',
-          action: actionType.split('/')[1] || actionType,
+          type: taskType,
+          action: action,
           parameters: params
         }),
         new Promise((_, reject) =>
@@ -121,6 +125,14 @@ class EnhancedScreenpipeService {
       });
       throw error;
     }
+  }
+
+  // Helper method to ensure we only use valid task types
+  private getValidTaskType(type: string): "browser" | "app" | "system" | "email" | "social" | "data" {
+    const validTypes = ["browser", "app", "system", "email", "social", "data"];
+    return validTypes.includes(type.toLowerCase()) 
+      ? type.toLowerCase() as "browser" | "app" | "system" | "email" | "social" | "data" 
+      : "system";
   }
 
   // Implement executeTask to handle AutomationTask objects
