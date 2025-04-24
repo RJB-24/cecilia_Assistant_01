@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import SmartCommandProcessor from "@/components/command/SmartCommandProcessor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
