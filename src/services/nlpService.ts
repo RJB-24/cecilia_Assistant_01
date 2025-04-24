@@ -1,4 +1,3 @@
-
 /**
  * Comprehensive NLP Service for Groq AI Integration
  * 
@@ -73,6 +72,7 @@ export interface NLPResult {
 }
 
 const DEFAULT_CONFIG: NLPConfig = {
+  apiKey: '',
   model: 'llama-3.3-70b-versatile',
   temperature: 0.7,
   maxTokens: 1024
@@ -104,6 +104,9 @@ export class NLPService {
   
   constructor(config?: Partial<NLPConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    if (config?.apiKey) {
+      this.apiKey = config.apiKey;
+    }
   }
 
   /**

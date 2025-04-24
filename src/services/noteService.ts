@@ -11,6 +11,7 @@ export interface NoteTakingOptions {
   duration?: number;
   keywords?: string[];
   format?: 'bullets' | 'paragraphs' | 'outline';
+  source?: 'video' | 'meeting' | 'manual';
 }
 
 export interface Note {
@@ -58,7 +59,7 @@ class NoteService {
         content: summary,
         tags: options.keywords || [],
         createdAt: new Date(),
-        source: 'video',
+        source: options.source || 'video',
         sourceDetails: {
           duration: options.duration
         }
@@ -86,7 +87,7 @@ class NoteService {
       title: meetingTitle,
       format: 'outline',
       source: 'meeting'
-    } as any);
+    });
   }
   
   /**
