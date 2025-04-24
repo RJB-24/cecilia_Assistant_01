@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
@@ -33,6 +32,7 @@ import { voiceService } from "@/services/voiceService";
 import { noteService } from "@/services/noteService";
 import { cn } from "@/lib/utils";
 import { AutomationTask } from "@/services/screenpipeService";
+import { APP_MAPPINGS } from '@/constants/appMappings';
 
 interface SmartCommandState {
   command: string;
@@ -71,7 +71,6 @@ const SmartCommandProcessor: React.FC = () => {
   const [isGroqConfigured, setIsGroqConfigured] = useState(false);
   const [isScreenpipeConfigured, setIsScreenpipeConfigured] = useState(false);
   
-  // Update state helper to avoid repetitive setState calls
   const updateState = (updates: Partial<SmartCommandState>) => {
     setState(prev => ({ ...prev, ...updates }));
   };
@@ -94,7 +93,6 @@ const SmartCommandProcessor: React.FC = () => {
         });
     }
     
-    // Start screen context monitoring
     const contextUpdateInterval = setInterval(updateScreenContext, 10000);
     
     return () => {
@@ -267,12 +265,11 @@ Since this is a demo, when you say "Stop taking notes", I'll generate some sampl
     
     updateState({ 
       isProcessing: true,
-      processingProgress: 0
+      processingProgress: 50
     });
     
     addToConversation('user', state.command);
     
-    // Start progress animation
     const progressInterval = setInterval(() => {
       updateState(prev => ({ 
         processingProgress: Math.min(prev.processingProgress + 5, 95) 
@@ -282,7 +279,6 @@ Since this is a demo, when you say "Stop taking notes", I'll generate some sampl
     toast.info("Processing command...");
     
     try {
-      // First check for built-in commands
       const isAppCommand = await handleAppOpeningCommand(state.command);
       if (isAppCommand) {
         clearInterval(progressInterval);
@@ -310,7 +306,6 @@ Since this is a demo, when you say "Stop taking notes", I'll generate some sampl
           await updateScreenContext();
         }
         
-        // Build context-aware prompt
         let contextEnhancedCommand = state.command;
         
         if (state.screenContext && state.isAdvancedMode) {
@@ -319,7 +314,6 @@ Since this is a demo, when you say "Stop taking notes", I'll generate some sampl
         
         let result: string;
         
-        // Use agent mode for advanced processing
         if (state.isAgentMode) {
           result = await groqService.processAgentCommand(contextEnhancedCommand);
         } else {
@@ -328,7 +322,6 @@ Since this is a demo, when you say "Stop taking notes", I'll generate some sampl
         
         addToConversation('assistant', result);
         
-        // Handle automation based on result
         if (isScreenpipeConfigured && result) {
           const automationTask = extractAutomationTask(result, state.command);
           
