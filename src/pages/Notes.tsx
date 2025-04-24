@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Note, Trash2, Calendar, Video } from "lucide-react";
+import { Calendar, Note, Trash2, Video } from "lucide-react";
 import { toast } from "sonner";
 import { noteService, Note as NoteType } from "@/services/noteService";
 
