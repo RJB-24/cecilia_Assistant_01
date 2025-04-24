@@ -1,6 +1,6 @@
 
 import { BaseNLPService } from './baseService';
-import { NLPOptions, NLPResult } from './types';
+import { NLPConfig, NLPOptions, NLPResult } from './types';
 import { ChatService } from './chatService';
 
 export class AgentService extends BaseNLPService {
