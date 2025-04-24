@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, StopCircle, Send, Camera, Cog, Lightbulb, Computer, Calendar, Youtube, Video, Note } from "lucide-react";
+import { Mic, StopCircle, Send, Camera, Cog, Lightbulb, Computer, Calendar, Youtube, Video, FileText } from "lucide-react";
 import { groqService } from "@/services/groqService";
 import { screenpipeService, APP_MAPPINGS } from "@/services/screenpipeService";
 import { voiceService } from "@/services/voiceService";
@@ -496,7 +496,7 @@ Since this is a demo, when you say "Stop taking notes", I'll generate some sampl
                     setTimeout(handleSendCommand, 100);
                   }}
                 >
-                  <Note className="h-3.5 w-3.5" />
+                  <FileText className="h-3.5 w-3.5" />
                   <span>Notes</span>
                 </Button>
                 <Button

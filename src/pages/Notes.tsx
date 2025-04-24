@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Note, Trash2, Video } from "lucide-react";
+import { Calendar, FileText, Trash2, Video } from "lucide-react";
 import { toast } from "sonner";
 import { noteService, Note as NoteType } from "@/services/noteService";
 
@@ -89,7 +89,7 @@ const Notes: React.FC = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8">
-                    <Note className="h-10 w-10 text-jarvis-secondary opacity-30 mb-2" />
+                    <FileText className="h-10 w-10 text-jarvis-secondary opacity-30 mb-2" />
                     <p className="text-jarvis-secondary">No notes yet</p>
                     <p className="text-xs text-jarvis-secondary mt-2">
                       Say "Take notes for my meeting" to start
@@ -135,7 +135,7 @@ const Notes: React.FC = () => {
             ) : (
               <Card className="jarvis-hologram h-full flex flex-col justify-center items-center">
                 <CardContent className="py-12 text-center">
-                  <Note className="h-16 w-16 text-jarvis-secondary opacity-20 mb-4 mx-auto" />
+                  <FileText className="h-16 w-16 text-jarvis-secondary opacity-20 mb-4 mx-auto" />
                   <h3 className="text-lg font-medium text-jarvis-light">Select a note to view</h3>
                   <p className="text-jarvis-secondary mt-2 max-w-md mx-auto">
                     Your meeting and video notes will appear here. Cecilia can take notes automatically
