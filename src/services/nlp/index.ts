@@ -37,6 +37,10 @@ export class NLPService extends BaseNLPService {
     return this.chatService.processText(text, options);
   }
 
+  async processMessages(messages: NLPMessage[], options?: Partial<NLPOptions>): Promise<NLPResult> {
+    return this.chatService.processMessages(messages, options);
+  }
+
   async* streamChat(messages: NLPMessage[], options?: Partial<NLPOptions>): AsyncGenerator<string, void, unknown> {
     yield* this.chatService.streamChat(messages, options);
   }
@@ -55,6 +59,10 @@ export class NLPService extends BaseNLPService {
 
   async processAgentCommand(command: string, options?: Partial<NLPOptions>): Promise<NLPResult> {
     return this.agentService.processAgentCommand(command, options);
+  }
+
+  async processAgentConversation(messages: NLPMessage[], options?: Partial<NLPOptions>): Promise<NLPResult> {
+    return this.agentService.processAgentConversation(messages, options);
   }
 
   async submitBatch(jobs: any[], options?: { window?: string }): Promise<any> {

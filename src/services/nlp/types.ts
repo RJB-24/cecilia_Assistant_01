@@ -38,6 +38,7 @@ export interface NLPOptions {
   reasoningFormat?: 'parsed' | 'raw' | 'hidden';
   language?: string;
   voice?: string;
+  systemPrompt?: string;
 }
 
 export interface NLPResult {
@@ -51,4 +52,11 @@ export interface NLPResult {
     type: string;
     parameters: Record<string, any>;
   }>;
+  toolResults?: Array<{
+    tool: string;
+    success: boolean;
+    result?: any;
+    error?: string;
+  }>;
+  toolError?: string;
 }
