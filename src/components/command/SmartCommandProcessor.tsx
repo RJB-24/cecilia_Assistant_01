@@ -271,7 +271,8 @@ Since this is a demo, when you say "Stop taking notes", I'll generate some sampl
     addToConversation('user', state.command);
     
     const progressInterval = setInterval(() => {
-      updateState(prev => ({ 
+      setState(prev => ({ 
+        ...prev,
         processingProgress: Math.min(prev.processingProgress + 5, 95) 
       }));
     }, 100);

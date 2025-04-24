@@ -1,9 +1,15 @@
-import { screenpipeService } from './screenpipeService';
+
+import { screenpipeService, CaptureOptions, AutomationTask, TaskResult } from './screenpipeService';
 
 interface ErrorHandlingOptions {
   retries?: number;
   fallback?: string;
   continueOnError?: boolean;
+}
+
+interface EnhancedCaptureOptions extends CaptureOptions {
+  detectText?: boolean;
+  redactPatterns?: string[];
 }
 
 class EnhancedScreenpipeService {
@@ -15,6 +21,22 @@ class EnhancedScreenpipeService {
 
   constructor() {
     this.loadAutomationHistory();
+  }
+
+  public isConfigured(): boolean {
+    return screenpipeService.isConfigured();
+  }
+
+  public isConnected(): boolean {
+    return screenpipeService.isConnected();
+  }
+
+  public async connect(): Promise<boolean> {
+    return screenpipeService.connect();
+  }
+
+  public async getScreenContext(): Promise<any> {
+    return screenpipeService.getScreenContext();
   }
 
   public setConfig(config: any) {
@@ -69,8 +91,13 @@ class EnhancedScreenpipeService {
 
   public async executeAction(actionType: string, params: any, timeout: number = this.defaultTimeout): Promise<any> {
     try {
+      // Using executeTask instead of automate which doesn't exist
       const result = await Promise.race([
-        screenpipeService.automate(actionType, params),
+        screenpipeService.executeTask({
+          type: actionType.split('/')[0] || 'system',
+          action: actionType.split('/')[1] || actionType,
+          parameters: params
+        }),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error(`Action timed out after ${timeout}ms`)), timeout)
         )
@@ -96,6 +123,50 @@ class EnhancedScreenpipeService {
     }
   }
 
+  // Implement executeTask to handle AutomationTask objects
+  public async executeTask(task: AutomationTask): Promise<TaskResult> {
+    try {
+      const result = await screenpipeService.executeTask(task);
+      
+      this.logAutomationAction({
+        action: `${task.type}/${task.action}`,
+        params: task.parameters,
+        success: true,
+        timestamp: new Date(),
+      });
+      
+      return result;
+    } catch (error) {
+      this.logAutomationAction({
+        action: `${task.type}/${task.action}`,
+        params: task.parameters,
+        success: false,
+        error: (error as Error).message,
+        timestamp: new Date(),
+      });
+      
+      throw error;
+    }
+  }
+
+  // Add captureScreen method using the screenpipeService implementation
+  public async captureScreen(options: CaptureOptions = {}): Promise<string> {
+    return screenpipeService.captureScreen(options);
+  }
+
+  // Add captureScreenEnhanced method for enhanced screen capture
+  public async captureScreenEnhanced(options: EnhancedCaptureOptions = {}): Promise<any> {
+    const screenImage = await this.captureScreen(options);
+    
+    // Mock response for enhanced features - in a real implementation,
+    // this would process the image further with text detection, etc.
+    return {
+      image: screenImage,
+      detectedText: options.detectText ? ['Text detected in screen (simulated)'] : [],
+      redacted: options.redactPatterns?.length ? true : false
+    };
+  }
+
   public async automateWithRetry(
     actionType: string,
     params: any,
@@ -111,29 +182,13 @@ class EnhancedScreenpipeService {
           await this.delay(Math.pow(2, attempt) * 500); // Exponential backoff
         }
         
-        const result = await screenpipeService.automate(actionType, params);
+        // Using executeAction instead of directly calling screenpipeService.automate
+        const result = await this.executeAction(actionType, params);
         
-        // Log successful attempt
-        this.logAutomationAction({
-          action: actionType,
-          params,
-          success: true,
-          timestamp: new Date(),
-        });
-
         return result;
       } catch (error: any) {
         lastError = error;
         console.error(`Automation attempt ${attempt + 1}/${retryCount + 1} failed:`, error);
-        
-        // Log failed attempt
-        this.logAutomationAction({
-          action: actionType,
-          params,
-          success: false,
-          error: error.message,
-          timestamp: new Date(),
-        });
       }
     }
     
