@@ -1,4 +1,3 @@
-
 # GroqFlow - AI-Powered Workflow Automation Assistant
 
 GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomously executing tasks such as email drafting, social media management, data analysis, and desktop automation. The assistant leverages Groq's AI capabilities for natural language processing and Screenpipe's Terminator for desktop automation.
@@ -86,9 +85,28 @@ GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomo
    ```
 
 4. Install Screenpipe Terminator agent:
-   - Download from [Screenpipe Documentation](https://docs.screenpi.pe/terminator/getting-started)
-   - Follow the installation instructions for your operating system
-   - Ensure the agent is running before launching GroqFlow
+   
+   **Windows Installation:**
+   - Download the Screenpipe Terminator installer from [Screenpipe Documentation](https://docs.screenpi.pe/terminator/getting-started)
+   - Run the installer (.exe file) and follow the on-screen instructions
+   - Grant necessary permissions when prompted
+   - Screenpipe will install as a system service and start automatically
+   - Verify installation by checking the system tray for the Screenpipe icon
+
+   **macOS Installation:**
+   - Download the macOS .dmg file from [Screenpipe Documentation](https://docs.screenpi.pe/terminator/getting-started)
+   - Open the .dmg file and drag the Screenpipe app to your Applications folder
+   - Launch Screenpipe from your Applications folder
+   - When prompted, grant accessibility permissions (System Preferences → Security & Privacy → Accessibility)
+   - Grant screen recording permissions when prompted
+   - Screenpipe will run in the background with an icon in your menu bar
+
+   **Linux Installation:**
+   - Download the Linux .AppImage or .deb package from [Screenpipe Documentation](https://docs.screenpi.pe/terminator/getting-started)
+   - For .AppImage: Make the file executable with `chmod +x Screenpipe-Terminator.AppImage`
+   - For .deb package: Install with `sudo dpkg -i screenpipe-terminator.deb`
+   - Launch Screenpipe and follow the setup wizard
+   - Grant necessary permissions when prompted
 
 5. Start the development server:
    ```bash
@@ -113,7 +131,9 @@ GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomo
    - **Llama 3.3 70B**: Best for complex tasks and reasoning
    - **Llama 3.1 8B**: Faster responses, good for simpler tasks
    - **Compound Beta**: For web search and code execution capabilities
-5. Configure your preferred Text-to-Speech voice.
+5. Configure your preferred Text-to-Speech voice from available options:
+   - For English: Fritz-PlayAI, Arista-PlayAI, Calum-PlayAI, Celeste-PlayAI, and more
+   - For Arabic: Ahmad-PlayAI, Amira-PlayAI, Khalid-PlayAI, Nasser-PlayAI
 6. Save your settings.
 
 ### Connecting Screenpipe Terminator
@@ -122,7 +142,10 @@ GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomo
 2. Download and install the Terminator agent if not already done.
 3. Click "Check Agent Status" to verify the agent is running.
 4. Click "Connect to Agent" to establish a connection.
-5. Grant necessary permissions when prompted (screen recording, accessibility).
+5. Grant necessary permissions when prompted:
+   - **Windows**: Allow accessibility and automation permissions
+   - **macOS**: Enable screen recording and accessibility features
+   - **Linux**: Grant X11 permissions or Wayland access
 
 ### General Settings Configuration
 

@@ -47,9 +47,54 @@ VITE_GROQ_API_KEY=your_groq_api_key
 ```
 
 4. Install Screenpipe Terminator:
-- Download from [Screenpipe Documentation](https://docs.screenpi.pe/terminator/getting-started)
-- Follow OS-specific installation instructions
-- Ensure the agent is running before launching GroqFlow
+   
+   **Detailed Screenpipe Installation Steps**
+   
+   **Windows:**
+   - Download the installer from [Screenpipe Documentation](https://docs.screenpi.pe/terminator/getting-started)
+   - Run the installer (.exe file)
+   - Follow the on-screen instructions
+   - When prompted, grant administrator privileges to complete installation
+   - Grant accessibility permissions when prompted
+   - The installer will add Screenpipe to your startup programs
+   - Verify the installation by looking for the Screenpipe icon in your system tray
+   - Right-click the icon to access settings or check status
+
+   **macOS:**
+   - Download the macOS .dmg file from [Screenpipe Documentation](https://docs.screenpi.pe/terminator/getting-started)
+   - Open the .dmg file
+   - Drag the Screenpipe app to your Applications folder
+   - Open the app from your Applications folder
+   - When prompted, enter your admin password to grant necessary permissions
+   - Go to System Preferences → Security & Privacy → Privacy tab:
+     - Enable Accessibility permissions for Screenpipe
+     - Enable Screen Recording permissions for Screenpipe
+     - Enable Automation permissions if prompted
+   - Screenpipe will run in the background with an icon in your menu bar
+   - Click the menu bar icon to check status or access settings
+
+   **Linux:**
+   - Download the appropriate package for your distribution:
+     - .AppImage file (universal)
+     - .deb package (Debian/Ubuntu)
+     - .rpm package (Fedora/RHEL)
+   - For .AppImage:
+     - Make it executable: `chmod +x Screenpipe-Terminator.AppImage`
+     - Run it: `./Screenpipe-Terminator.AppImage`
+   - For .deb package:
+     - Install with: `sudo dpkg -i screenpipe-terminator.deb`
+     - If there are dependencies issues: `sudo apt-get install -f`
+   - For .rpm package:
+     - Install with: `sudo rpm -i screenpipe-terminator.rpm`
+   - Launch Screenpipe and follow the setup wizard
+   - Grant necessary X11 permissions or Wayland access when prompted
+   - Check status by finding the Screenpipe icon in your system tray
+
+   **Verifying Installation:**
+   - In all operating systems, you can verify if Screenpipe is running by:
+     - Looking for the icon in system tray/menu bar
+     - Opening GroqFlow and going to Settings → Screenpipe → Check Agent Status
+     - If installed correctly, you should see "Agent Connected" status
 
 5. Start the application:
 ```bash
@@ -172,12 +217,31 @@ The Analytics dashboard provides insights into:
 
 ## Voice Commands
 
+### Voice Assistant Features
+
+GroqFlow uses Groq's advanced speech models to provide a comprehensive voice assistant experience:
+
+#### Voice Recognition Capabilities
+- **Multilingual Support**: Recognize commands in both English and Hindi
+- **Context Awareness**: Understand follow-up questions and maintain conversation context
+- **Wake Word**: Optional "Cecilia" wake word to activate voice listening
+- **Continuous Listening**: Toggle between push-to-talk and always-listening modes
+- **Voice Identification**: Distinguish between different speakers (coming soon)
+
+#### Voice Output Features
+- **Natural Text-to-Speech**: Cecilia responds with natural-sounding voice using Groq's PlayAI TTS
+- **Voice Customization**: Choose from multiple voice options:
+  - **English Voices**: Fritz-PlayAI, Arista-PlayAI, Atlas-PlayAI, Basil-PlayAI, Briggs-PlayAI, Calum-PlayAI, Celeste-PlayAI, Cheyenne-PlayAI, Chip-PlayAI, Cillian-PlayAI, Deedee-PlayAI, Gail-PlayAI, Indigo-PlayAI, Mamaw-PlayAI, Mason-PlayAI, Mikail-PlayAI, Mitch-PlayAI, Quinn-PlayAI, Thunder-PlayAI
+  - **Arabic Voices**: Ahmad-PlayAI, Amira-PlayAI, Khalid-PlayAI, Nasser-PlayAI
+- **Voice Speed Control**: Adjust speaking rate for faster or slower responses
+- **Audio Feedback**: Sound effects for command recognition and completion
+
 ### Command Structure
 - Start with "Cecilia" (optional wake word)
 - State your command clearly
 - Wait for confirmation
 
-### Example Commands
+### Example Voice Commands
 1. Email:
    - "Draft an email to [recipient]"
    - "Send the quarterly report to the team"
@@ -188,20 +252,153 @@ The Analytics dashboard provides insights into:
    - "Show my calendar for next week"
    - "Cancel my 3 PM appointment"
 
-3. Data Analysis:
-   - "Analyze this spreadsheet"
-   - "Generate a report from this data"
-   - "Calculate the total from column A"
+3. Application Control:
+   - "Open Spotify"
+   - "Launch Microsoft Word"
+   - "Open Chrome and go to Gmail"
+   - "Open the Photos app"
+   - "Start Zoom meeting"
+   - "Open Calculator"
+   - "Launch Control Panel"
+   - "Open File Explorer and go to Downloads folder"
+   - "Start PowerPoint presentation"
+   - "Open System Settings"
 
-4. Web Navigation:
-   - "Open YouTube"
-   - "Search for [query]"
-   - "Go to [website]"
+4. System Commands:
+   - "Take a screenshot" 
+   - "Lock my computer"
+   - "Show all open windows"
+   - "Increase screen brightness"
+   - "Mute the volume"
+   - "Show battery status"
+   - "Empty the recycle bin"
+   - "Show CPU usage"
+   - "Check available storage"
 
-5. System Control:
-   - "Open [application]"
-   - "Close all Chrome tabs"
+5. Complex Application Commands:
+   - "Open Excel and create a new spreadsheet"
+   - "Open Chrome, go to YouTube, and search for cooking tutorials"
+   - "Open Word and start a new document titled 'Project Proposal'"
+   - "Open Photoshop and create a new canvas sized 1080 by 1080 pixels"
+   - "Open Slack and message John about the meeting"
+
+## Desktop Automation
+
+GroqFlow can control virtually any application on your computer through the Screenpipe Terminator integration. Here's how to use this powerful feature:
+
+### Controlling Applications
+
+1. **Opening Applications:**
+   - "Open [application name]" - Opens any installed application
+   - "Launch [application name]" - Alternative command for opening applications
+   - "Start [application name]" - Another way to open applications
+
+2. **Working with Specific Applications:**
+   - **Browsers:**
+     - "Open Chrome/Firefox/Edge/Safari"
+     - "Open a new browser tab"
+     - "Go to [website]"
+     - "Search for [query]"
+     - "Bookmark this page"
+     - "Close the current tab"
+     - "Go back/forward"
+     - "Refresh the page"
+
+   - **Productivity Apps:**
+     - "Open Word/Excel/PowerPoint"
+     - "Create a new document/spreadsheet/presentation"
+     - "Save this file"
+     - "Export as PDF"
+     - "Open recent files"
+     - "Print this document"
+     - "Insert a table/chart/image"
+
+   - **Media Apps:**
+     - "Open Spotify/Netflix/YouTube"
+     - "Play/pause/skip"
+     - "Increase/decrease volume"
+     - "Search for [content]"
+     - "Open my playlist"
+     - "Like this song/video"
+
+   - **Communication Apps:**
+     - "Open Slack/Teams/Discord/Zoom"
+     - "Start a new meeting"
+     - "Join the scheduled meeting"
+     - "Send a message to [person/channel]"
+     - "Share my screen"
+     - "Turn on/off camera"
+     - "Mute/unmute microphone"
+
+3. **System Controls:**
+   - "Lock my computer"
+   - "Log out"
+   - "Shut down/restart"
+   - "Open Control Panel/System Settings"
+   - "Adjust volume/brightness"
+   - "Check system information"
+   - "Show all open applications"
    - "Take a screenshot"
+   - "Empty recycle bin"
+
+4. **File Management:**
+   - "Open File Explorer/Finder"
+   - "Create a new folder named [name]"
+   - "Move/copy file from [location] to [location]"
+   - "Delete [file/folder]"
+   - "Search for [filename]"
+   - "Show recent files"
+   - "Open [document type] files"
+
+### Application Automation Examples
+
+1. **Browser Workflow:**
+   ```
+   "Open Chrome"
+   "Go to gmail.com"
+   "Compose a new email"
+   "Add subject 'Meeting Notes'"
+   "Type 'Attached are the notes from today's meeting'"
+   "Attach the file from my desktop called 'Meeting Notes.pdf'"
+   "Send the email"
+   ```
+
+2. **Presentation Preparation:**
+   ```
+   "Open PowerPoint"
+   "Create a new presentation"
+   "Add a title slide with 'Quarterly Review'"
+   "Add a new slide"
+   "Insert a chart from the Excel file 'Q3 Results.xlsx'"
+   "Save the presentation as 'Q3 Quarterly Review'"
+   ```
+
+3. **System Maintenance:**
+   ```
+   "Open Control Panel"
+   "Go to Programs and Features"
+   "Sort by size"
+   "Show me the largest programs"
+   "Go back"
+   "Open System Information"
+   "Check disk space"
+   ```
+
+### Advanced Control Features
+
+1. **Multi-app Workflows:**
+   - Chain commands across different applications
+   - Perform complex sequences with a single voice command
+
+2. **Error Recovery:**
+   - Automatic error detection and correction
+   - Retry mechanisms for failed actions
+
+3. **Screen Context Integration:**
+   - "Click the submit button"
+   - "Scroll down"
+   - "Select that text"
+   - "Click on the first search result"
 
 ## Groq AI Integration
 

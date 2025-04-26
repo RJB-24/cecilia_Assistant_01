@@ -6,6 +6,7 @@
 
 import { groqService } from './groqService';
 import { noteService } from './noteService';
+import { voiceConfigService } from './nlp/voiceConfigService';
 import '../lib/types'; // Import the types to make them available
 
 export interface VoiceServiceOptions {
@@ -34,6 +35,8 @@ export class VoiceService {
   private audioRecorder: MediaRecorder | null = null;
   private audioChunks: BlobPart[] = [];
   private isRecordingForNotes = false;
+  private wakeWords = ['cecilia', 'assistant', 'hey cecilia', 'ok cecilia'];
+  private isWakeWordEnabled = true;
 
   constructor(options: VoiceServiceOptions = {}) {
     this.language = options.language || 'en-US';
@@ -325,6 +328,52 @@ export class VoiceService {
   }
   
   /**
+   * Speak text using the configured voice
+   */
+  async speakText(text: string): Promise<void> {
+    try {
+      await voiceConfigService.textToSpeech(text);
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Error speaking text:', error);
+      // Fallback to browser speech synthesis
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = this.language;
+        window.speechSynthesis.speak(utterance);
+        return Promise.resolve();
+      }
+      return Promise.reject(error);
+    }
+  }
+
+  /**
+   * Enable or disable wake word detection
+   */
+  setWakeWordEnabled(enabled: boolean): void {
+    this.isWakeWordEnabled = enabled;
+  }
+
+  /**
+   * Add a custom wake word
+   */
+  addWakeWord(word: string): void {
+    if (!this.wakeWords.includes(word.toLowerCase())) {
+      this.wakeWords.push(word.toLowerCase());
+    }
+  }
+
+  /**
+   * Check if text contains a wake word
+   */
+  containsWakeWord(text: string): boolean {
+    if (!this.isWakeWordEnabled) return true;
+    
+    const lowerText = text.toLowerCase();
+    return this.wakeWords.some(word => lowerText.includes(word));
+  }
+  
+  /**
    * Check if voice recognition is currently active
    */
   isListening(): boolean {
@@ -354,6 +403,23 @@ export class VoiceService {
   isSupported(): boolean {
     return typeof window !== 'undefined' && 
       (('SpeechRecognition' in window) || ('webkitSpeechRecognition' in window));
+  }
+
+  /**
+   * Get current language
+   */
+  getLanguage(): string {
+    return this.language;
+  }
+
+  /**
+   * Toggle continuous listening mode
+   */
+  setContinuousMode(enabled: boolean): void {
+    this.continuous = enabled;
+    if (this.recognition) {
+      this.recognition.continuous = enabled;
+    }
   }
 }
 
