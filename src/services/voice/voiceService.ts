@@ -1,3 +1,4 @@
+
 import { voiceConfigService } from '../nlp/voiceConfigService';
 import { commandProcessingService } from './commandProcessingService';
 import { voiceRecordingService } from './voiceRecordingService';
@@ -19,6 +20,15 @@ export class VoiceService {
   private interimTranscript = '';
   private finalTranscript = '';
   private isInitialized = false;
+  private welcomeMessage = "Hello sir, I'm online and ready to assist you. How can I help?";
+  private personalityTraits = {
+    humor: true,
+    proactive: true,
+    formality: 'semi-formal'
+  };
+  private lastInteractionTime = Date.now();
+  private idleReminderInterval: number | null = null;
+  private importantEvents: Array<{date: Date, description: string}> = [];
 
   constructor(options: VoiceServiceOptions = {}) {
     this.language = options.language || 'en-US';
@@ -26,6 +36,34 @@ export class VoiceService {
     this.onInterim = options.onInterim;
     this.onError = options.onError;
     this.initRecognition();
+    this.loadImportantEvents();
+    this.setupIdleReminders();
+  }
+
+  private loadImportantEvents() {
+    // In a real app, these would come from calendar APIs or user configuration
+    this.importantEvents = [
+      { 
+        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+        description: "Project deadline"
+      },
+      { 
+        date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
+        description: "Team meeting"
+      }
+    ];
+  }
+
+  private setupIdleReminders() {
+    // Check every 5 minutes if the user has been idle for more than 30 minutes
+    this.idleReminderInterval = window.setInterval(() => {
+      const idleTimeMinutes = (Date.now() - this.lastInteractionTime) / (1000 * 60);
+      
+      if (idleTimeMinutes > 30 && Math.random() < 0.3) {
+        // 30% chance to remind the user after 30 minutes of inactivity
+        this.speakText("It's been a while since we've interacted. Is there anything I can help you with?");
+      }
+    }, 5 * 60 * 1000);
   }
 
   private initRecognition() {
@@ -68,6 +106,7 @@ export class VoiceService {
           const command = text.replace(/cecilia|assistant|hey cecilia|ok cecilia/gi, '').trim();
           if (command) {
             await this.processCommand(command);
+            this.lastInteractionTime = Date.now(); // Update last interaction time
           }
         }
       } else {
@@ -108,7 +147,19 @@ export class VoiceService {
       this.interimTranscript = '';
       this.listening = true;
       
-      await this.speakText("Hello sir, I'm online and ready to assist you. How can I help?");
+      // Check for important events and add to welcome message if needed
+      let greeting = this.welcomeMessage;
+      const upcomingEvent = this.getUpcomingEvent();
+      if (upcomingEvent) {
+        greeting += ` By the way, I should remind you that you have ${upcomingEvent.description} coming up in ${this.getDaysUntilEvent(upcomingEvent)} days.`;
+      }
+      
+      // Occasionally add a joke to be more human-like
+      if (this.personalityTraits.humor && Math.random() < 0.2) {
+        greeting += " " + this.getRandomJoke();
+      }
+      
+      await this.speakText(greeting);
       
       this.recognition.start();
       console.log('Voice recognition started');
@@ -118,6 +169,30 @@ export class VoiceService {
       console.error('Error starting speech recognition:', error);
       throw error;
     }
+  }
+
+  private getUpcomingEvent() {
+    if (this.importantEvents.length === 0) return null;
+    
+    // Sort events by date and get the closest one
+    const sortedEvents = [...this.importantEvents].sort((a, b) => a.date.getTime() - b.date.getTime());
+    return sortedEvents[0];
+  }
+  
+  private getDaysUntilEvent(event: {date: Date, description: string}) {
+    const diffTime = Math.abs(event.date.getTime() - new Date().getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  private getRandomJoke() {
+    const jokes = [
+      "I tried to make a reservation at the library, but they were all booked.",
+      "Why don't scientists trust atoms? Because they make up everything!",
+      "I'm reading a book about anti-gravity. It's impossible to put down.",
+      "Time flies like an arrow. Fruit flies like a banana.",
+      "I'd tell you a chemistry joke, but I'm afraid I wouldn't get a reaction."
+    ];
+    return jokes[Math.floor(Math.random() * jokes.length)];
   }
 
   /**
@@ -134,7 +209,22 @@ export class VoiceService {
 
   // Delegate to specialized services
   async processCommand(text: string): Promise<VoiceCommand> {
-    return commandProcessingService.processCommand(text);
+    const command = await commandProcessingService.processCommand(text);
+    
+    // After processing, respond with a voice confirmation
+    const responseTexts = {
+      'send_email': "I'll draft that email for you right away.",
+      'create_calendar_event': "I've added that event to your calendar.",
+      'analyze_data': "I'm analyzing that data for you now.",
+      'take_notes': "I'll start taking notes for you.",
+      'open_application': `Opening ${command.entities?.appName || 'the application'} now.`,
+      'unknown': "I'm not sure how to do that yet, but I'm learning."
+    };
+    
+    const responseText = responseTexts[command.intent || 'unknown'] || "I'll take care of that for you.";
+    await this.speakText(responseText);
+    
+    return command;
   }
 
   async startRecordingForNotes(): Promise<MediaStream> {
@@ -209,6 +299,25 @@ export class VoiceService {
     if (this.recognition) {
       this.recognition.continuous = enabled;
     }
+  }
+
+  // Personality customization
+  setPersonalityTrait(trait: 'humor' | 'proactive' | 'formality', value: boolean | string): void {
+    if (trait === 'formality' && typeof value === 'string') {
+      this.personalityTraits.formality = value;
+    } else if (trait !== 'formality' && typeof value === 'boolean') {
+      this.personalityTraits[trait] = value;
+    }
+  }
+
+  // Method to update welcome message
+  setWelcomeMessage(message: string): void {
+    this.welcomeMessage = message;
+  }
+
+  // Method to add important events
+  addImportantEvent(date: Date, description: string): void {
+    this.importantEvents.push({ date, description });
   }
 }
 

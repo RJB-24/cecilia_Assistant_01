@@ -1,0 +1,67 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add these styles to your globals.css */
+.mic-pulse {
+  position: relative;
+}
+
+.mic-pulse::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(79, 209, 197, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.mic-active {
+  background-color: rgba(79, 209, 197, 0.2) !important;
+  border-color: rgb(79, 209, 197) !important;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+.jarvis-hologram {
+  background-color: rgba(16, 24, 39, 0.7);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(79, 209, 197, 0.2);
+  box-shadow: 0 0 15px rgba(79, 209, 197, 0.1);
+}
+
+.jarvis-glow-text {
+  text-shadow: 0 0 5px rgba(79, 209, 197, 0.7);
+}
+
+.pulse-subtle {
+  animation: pulse-subtle 3s infinite;
+}
+
+@keyframes pulse-subtle {
+  0% {
+    box-shadow: 0 0 5px rgba(79, 209, 197, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(79, 209, 197, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(79, 209, 197, 0.3);
+  }
+}
+
+/* Rest of your existing styles */
