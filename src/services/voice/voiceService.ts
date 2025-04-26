@@ -42,6 +42,8 @@ export class VoiceService {
     proactive: true,
     formality: 'professional'
   };
+  // Default voice settings
+  private ttsVoice: string = "Celeste-PlayAI"; // Female voice from Groq's PlayAI TTS
 
   constructor(options: VoiceServiceOptions = {}) {
     this.language = options.language || 'en-US';
@@ -253,7 +255,10 @@ export class VoiceService {
    */
   async speakText(text: string): Promise<void> {
     try {
-      await voiceConfigService.textToSpeech(text);
+      // Use Groq's TTS capabilities with the selected female voice
+      await groqService.speakText(text, {
+        voice: this.ttsVoice
+      });
       return Promise.resolve();
     } catch (error) {
       console.error('Error with Groq TTS, falling back to browser:', error);
@@ -261,12 +266,42 @@ export class VoiceService {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = this.language;
         utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+        utterance.pitch = 1.1; // Slightly higher pitch for female voice
+        
+        // Try to find a female voice
+        const voices = window.speechSynthesis.getVoices();
+        const femaleVoice = voices.find(voice => 
+          voice.name.toLowerCase().includes('female') || 
+          voice.name.includes('Samantha') ||
+          voice.name.includes('Karen') ||
+          voice.name.includes('Tessa') ||
+          voice.name.includes('Victoria')
+        );
+        
+        if (femaleVoice) {
+          utterance.voice = femaleVoice;
+        }
+        
         window.speechSynthesis.speak(utterance);
         return Promise.resolve();
       }
       return Promise.reject(error);
     }
+  }
+
+  /**
+   * Set the TTS voice for the assistant
+   * @param voice Voice ID from Groq's PlayAI TTS
+   */
+  setVoice(voice: string): void {
+    this.ttsVoice = voice;
+  }
+  
+  /**
+   * Get the current TTS voice
+   */
+  getVoice(): string {
+    return this.ttsVoice;
   }
 
   // Wake word methods delegated to WakeWordService
