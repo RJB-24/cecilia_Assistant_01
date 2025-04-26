@@ -18,6 +18,7 @@ export class VoiceService {
   private onError?: (error: string) => void;
   private interimTranscript = '';
   private finalTranscript = '';
+  private isInitialized = false;
 
   constructor(options: VoiceServiceOptions = {}) {
     this.language = options.language || 'en-US';
@@ -41,17 +42,34 @@ export class VoiceService {
       this.recognition.onresult = this.handleRecognitionResult.bind(this);
       this.recognition.onerror = this.handleRecognitionError.bind(this);
       this.recognition.onend = this.handleRecognitionEnd.bind(this);
+      this.recognition.onaudiostart = () => console.log('Audio recording started');
+      this.recognition.onaudioend = () => console.log('Audio recording ended');
+      this.recognition.onsoundstart = () => console.log('Sound detected');
+      this.recognition.onsoundend = () => console.log('Sound ended');
+      this.recognition.onspeechstart = () => console.log('Speech started');
+      this.recognition.onspeechend = () => console.log('Speech ended');
+      this.recognition.onnomatch = () => console.log('No speech was recognized');
+
+      this.isInitialized = true;
     } else {
       console.warn('Speech recognition not supported in this browser');
     }
   }
 
-  private handleRecognitionResult(event: SpeechRecognitionEvent) {
+  private async handleRecognitionResult(event: SpeechRecognitionEvent) {
     this.interimTranscript = '';
     
     for (let i = event.resultIndex; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
         this.finalTranscript += event.results[i][0].transcript;
+        
+        const text = event.results[i][0].transcript.toLowerCase();
+        if (this.containsWakeWord(text)) {
+          const command = text.replace(/cecilia|assistant|hey cecilia|ok cecilia/gi, '').trim();
+          if (command) {
+            await this.processCommand(command);
+          }
+        }
       } else {
         this.interimTranscript += event.results[i][0].transcript;
       }
@@ -78,7 +96,7 @@ export class VoiceService {
   }
 
   /**
-   * Start voice recognition
+   * Start voice recognition with greeting
    */
   async start(): Promise<void> {
     if (!this.recognition) {
@@ -89,11 +107,12 @@ export class VoiceService {
       this.finalTranscript = '';
       this.interimTranscript = '';
       this.listening = true;
+      
+      await this.speakText("Hello sir, I'm online and ready to assist you. How can I help?");
+      
       this.recognition.start();
       console.log('Voice recognition started');
       
-      // Announce that voice recognition is active
-      await this.speakText("Voice recognition activated. How can I help you?");
     } catch (error) {
       this.listening = false;
       console.error('Error starting speech recognition:', error);
@@ -126,16 +145,20 @@ export class VoiceService {
     return voiceRecordingService.stopRecordingAndProcessNotes(title);
   }
 
+  /**
+   * Enhanced text-to-speech with Groq integration
+   */
   async speakText(text: string): Promise<void> {
     try {
       await voiceConfigService.textToSpeech(text);
       return Promise.resolve();
     } catch (error) {
-      console.error('Error speaking text:', error);
-      // Fallback to browser speech synthesis
+      console.error('Error with Groq TTS, falling back to browser:', error);
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = this.language;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
         window.speechSynthesis.speak(utterance);
         return Promise.resolve();
       }
