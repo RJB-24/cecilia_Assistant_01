@@ -91,6 +91,9 @@ export class VoiceService {
       this.listening = true;
       this.recognition.start();
       console.log('Voice recognition started');
+      
+      // Announce that voice recognition is active
+      await this.speakText("Voice recognition activated. How can I help you?");
     } catch (error) {
       this.listening = false;
       console.error('Error starting speech recognition:', error);
@@ -129,6 +132,7 @@ export class VoiceService {
       return Promise.resolve();
     } catch (error) {
       console.error('Error speaking text:', error);
+      // Fallback to browser speech synthesis
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = this.language;

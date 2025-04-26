@@ -1,35 +1,34 @@
 
-// Global type declarations for browser APIs not included in TypeScript by default
-
-interface SpeechRecognitionEvent extends Event {
+// Speech Recognition Types
+export interface SpeechRecognitionEvent extends Event {
   resultIndex: number;
   results: SpeechRecognitionResultList;
 }
 
-interface SpeechRecognitionResultList {
+export interface SpeechRecognitionResultList {
   length: number;
   item(index: number): SpeechRecognitionResult;
   [index: number]: SpeechRecognitionResult;
 }
 
-interface SpeechRecognitionResult {
+export interface SpeechRecognitionResult {
   length: number;
   item(index: number): SpeechRecognitionAlternative;
   [index: number]: SpeechRecognitionAlternative;
   isFinal?: boolean;
 }
 
-interface SpeechRecognitionAlternative {
+export interface SpeechRecognitionAlternative {
   transcript: string;
   confidence: number;
 }
 
-interface SpeechRecognitionError extends Event {
+export interface SpeechRecognitionError extends Event {
   error: string;
   message?: string;
 }
 
-interface SpeechRecognition extends EventTarget {
+export interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
@@ -69,6 +68,3 @@ declare global {
     abort(): void;
   }
 }
-
-// Add this to make the file a module
-export {};
