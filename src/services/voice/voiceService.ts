@@ -12,6 +12,7 @@ import { voiceRecordingService } from './voiceRecordingService';
 import { wakeWordService } from './wakeWordService';
 import { VoiceServiceOptions, VoiceCommand } from './types';
 import '../../lib/types'; // Import the types to make them available
+import type { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionError } from '../../lib/types';
 
 export class VoiceService {
   private recognition: SpeechRecognition | null = null;

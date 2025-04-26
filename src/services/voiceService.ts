@@ -1,4 +1,3 @@
-
 /**
  * Voice command service for speech recognition and processing
  * Integrates with Groq API for advanced NLP and multilingual support
@@ -8,6 +7,7 @@ import { groqService } from './groqService';
 import { noteService } from './noteService';
 import { voiceConfigService } from './nlp/voiceConfigService';
 import '../lib/types'; // Import the types to make them available
+import type { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionError } from '../lib/types';
 
 export interface VoiceServiceOptions {
   language?: string; // 'en-US', 'hi-IN', etc.
@@ -61,7 +61,7 @@ export class VoiceService {
       this.recognition.interimResults = Boolean(this.onInterim);
       
       // Handle speech recognition results
-      this.recognition.onresult = (event) => {
+      this.recognition.onresult = (event: SpeechRecognitionEvent) => {
         this.interimTranscript = '';
         
         for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -79,7 +79,7 @@ export class VoiceService {
       };
       
       // Handle errors
-      this.recognition.onerror = (event) => {
+      this.recognition.onerror = (event: SpeechRecognitionError) => {
         console.error('Speech recognition error:', event);
         if (this.onError) {
           this.onError(`Speech recognition error: ${event.error}`);
