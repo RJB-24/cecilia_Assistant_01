@@ -1,14 +1,26 @@
+/**
+ * Voice command service for speech recognition and processing
+ * Integrates with Groq API for advanced NLP and multilingual support
+ */
 
+import { groqService } from '../groqService';
+import { noteService } from '../noteService';
 import { voiceConfigService } from '../nlp/voiceConfigService';
-import { commandProcessingService } from './commandProcessingService';
-import { voiceRecordingService } from './voiceRecordingService';
-import { wakeWordService } from './wakeWordService';
-import { VoiceServiceOptions, VoiceCommand } from './types';
-import { 
-  SpeechRecognition, 
-  SpeechRecognitionEvent, 
-  SpeechRecognitionError 
-} from '../../lib/types';
+import '../../lib/types'; // Import the types to make them available
+
+export interface VoiceServiceOptions {
+  language?: string; // 'en-US', 'hi-IN', etc.
+  continuous?: boolean;
+  onInterim?: (text: string) => void;
+  onError?: (error: string) => void;
+}
+
+export interface VoiceCommand {
+  text: string;
+  confidence: number;
+  intent?: string;
+  entities?: Record<string, any>;
+}
 
 export class VoiceService {
   private recognition: SpeechRecognition | null = null;
@@ -19,15 +31,11 @@ export class VoiceService {
   private onError?: (error: string) => void;
   private interimTranscript = '';
   private finalTranscript = '';
-  private isInitialized = false;
-  private welcomeMessage = "Hello sir, I'm online and ready to assist you. How can I help?";
-  private personalityTraits = {
-    humor: true,
-    proactive: true,
-    formality: 'semi-formal'
-  };
-  private lastInteractionTime = Date.now();
-  private idleReminderInterval: number | null = null;
+  private audioRecorder: MediaRecorder | null = null;
+  private audioChunks: BlobPart[] = [];
+  private isRecordingForNotes = false;
+  private wakeWords = ['cecilia', 'assistant', 'hey cecilia', 'ok cecilia'];
+  private isWakeWordEnabled = true;
   private importantEvents: Array<{date: Date, description: string}> = [];
 
   constructor(options: VoiceServiceOptions = {}) {
@@ -321,5 +329,7 @@ export class VoiceService {
   }
 }
 
+// Singleton instance for app-wide use
 export const voiceService = new VoiceService();
+
 export default voiceService;
