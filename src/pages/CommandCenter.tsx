@@ -1,7 +1,10 @@
 
 import React from "react";
 import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import SmartCommandProcessor from "@/components/command/SmartCommandProcessor";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const CommandCenter: React.FC = () => {
@@ -10,6 +13,15 @@ const CommandCenter: React.FC = () => {
       <Helmet>
         <title>GroqFlow - Command Center</title>
       </Helmet>
+
+      <div className="flex items-center mb-6">
+        <Link to="/">
+          <Button variant="ghost" size="sm" className="mr-2">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+        </Link>
+      </div>
 
       <div className="space-y-6">
         <div className="space-y-2">

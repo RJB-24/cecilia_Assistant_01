@@ -18,7 +18,7 @@ const VoiceAssistantActivator: React.FC<VoiceAssistantActivatorProps> = ({
   const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
-    // Check if voice recognition is supported
+    // Check if voice recognition is supported and speak welcome message
     const supported = voiceService.isSupported();
     setIsLoading(false);
     
@@ -37,6 +37,10 @@ const VoiceAssistantActivator: React.FC<VoiceAssistantActivatorProps> = ({
       setIsLoading(true);
       await voiceService.start();
       setIsListening(true);
+      if (!isMuted) {
+        // Make sure to speak when activated
+        await voiceService.speakText("Voice assistant activated and ready to help");
+      }
       toast.success("Voice assistant activated");
     } catch (error) {
       toast.error(`Failed to activate voice assistant: ${error instanceof Error ? error.message : String(error)}`);
@@ -50,6 +54,10 @@ const VoiceAssistantActivator: React.FC<VoiceAssistantActivatorProps> = ({
       setIsLoading(true);
       await voiceService.stop();
       setIsListening(false);
+      if (!isMuted) {
+        // Speak when deactivated
+        await voiceService.speakText("Voice assistant deactivated");
+      }
       toast.info("Voice assistant deactivated");
     } catch (error) {
       toast.error(`Error deactivating voice assistant: ${error instanceof Error ? error.message : String(error)}`);
