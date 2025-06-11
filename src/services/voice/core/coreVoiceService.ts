@@ -1,92 +1,88 @@
 
 import { VoiceServiceOptions } from '../types';
-import type { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionError } from '../../../lib/types';
 
 export class CoreVoiceService {
   protected recognition: SpeechRecognition | null = null;
-  protected listening = false;
-  protected language: string;
-  protected continuous: boolean;
-  protected onInterim?: (text: string) => void;
-  protected onError?: (error: string) => void;
-  protected interimTranscript = '';
-  protected finalTranscript = '';
-  protected isInitialized: boolean = false;
+  protected finalTranscript: string = '';
+  protected interimTranscript: string = '';
+  protected listening: boolean = false;
+  protected language: string = 'en-US';
+  protected continuous: boolean = true;
+  protected interimResults: boolean = true;
 
   constructor(options: VoiceServiceOptions = {}) {
     this.language = options.language || 'en-US';
-    this.continuous = options.continuous || false;
-    this.onInterim = options.onInterim;
-    this.onError = options.onError;
-    this.initRecognition();
+    this.continuous = options.continuous !== false;
+    this.interimResults = options.interimResults !== false;
+    this.initializeSpeechRecognition();
   }
 
-  protected initRecognition() {
-    if (typeof window !== 'undefined' && 
-        ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-      
-      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-      this.recognition = new SpeechRecognitionAPI();
-      
-      this.recognition.lang = this.language;
-      this.recognition.continuous = this.continuous;
-      this.recognition.interimResults = Boolean(this.onInterim);
-      
-      this.recognition.onresult = this.handleRecognitionResult.bind(this);
-      this.recognition.onerror = this.handleRecognitionError.bind(this);
-      this.recognition.onend = this.handleRecognitionEnd.bind(this);
-      this.recognition.onaudiostart = () => console.log('Audio recording started');
-      this.recognition.onaudioend = () => console.log('Audio recording ended');
-      this.recognition.onsoundstart = () => console.log('Sound detected');
-      this.recognition.onsoundend = () => console.log('Sound ended');
-      this.recognition.onspeechstart = () => console.log('Speech started');
-      this.recognition.onspeechend = () => console.log('Speech ended');
-      this.recognition.onnomatch = () => console.log('No speech was recognized');
-
-      this.isInitialized = true;
-    } else {
+  private initializeSpeechRecognition(): void {
+    if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
       console.warn('Speech recognition not supported in this browser');
+      return;
     }
-  }
 
-  protected handleRecognitionResult(event: SpeechRecognitionEvent) {
-    this.interimTranscript = '';
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    this.recognition = new SpeechRecognition();
     
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
-      if (event.results[i].isFinal) {
-        this.finalTranscript += event.results[i][0].transcript;
-      } else {
-        this.interimTranscript += event.results[i][0].transcript;
-      }
-    }
-    
-    if (this.onInterim && this.interimTranscript) {
-      this.onInterim(this.interimTranscript);
+    if (this.recognition) {
+      this.recognition.continuous = this.continuous;
+      this.recognition.interimResults = this.interimResults;
+      this.recognition.lang = this.language;
+      this.recognition.maxAlternatives = 1;
+
+      this.recognition.onstart = () => {
+        console.log('Speech recognition started');
+        this.listening = true;
+      };
+
+      this.recognition.onresult = (event: any) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        this.finalTranscript += finalTranscript;
+        this.interimTranscript = interimTranscript;
+
+        console.log('Interim transcript:', interimTranscript);
+        console.log('Final transcript:', this.finalTranscript);
+      };
+
+      this.recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        this.listening = false;
+      };
+
+      this.recognition.onend = () => {
+        console.log('Speech recognition ended');
+        this.listening = false;
+      };
     }
   }
 
-  protected handleRecognitionError(event: SpeechRecognitionError) {
-    console.error('Speech recognition error:', event);
-    if (this.onError) {
-      this.onError(`Speech recognition error: ${event.error}`);
-    }
-  }
-
-  protected handleRecognitionEnd() {
-    if (this.listening) {
-      this.recognition?.start();
-    } else {
-      this.listening = false;
-    }
+  isSupported(): boolean {
+    return this.recognition !== null;
   }
 
   isListening(): boolean {
     return this.listening;
   }
 
-  isSupported(): boolean {
-    return typeof window !== 'undefined' && 
-      (('SpeechRecognition' in window) || ('webkitSpeechRecognition' in window));
+  getFinalTranscript(): string {
+    return this.finalTranscript;
+  }
+
+  getInterimTranscript(): string {
+    return this.interimTranscript;
   }
 
   setLanguage(language: string): void {
@@ -95,18 +91,4 @@ export class CoreVoiceService {
       this.recognition.lang = language;
     }
   }
-
-  getLanguage(): string {
-    return this.language;
-  }
-
-  setContinuousMode(enabled: boolean): void {
-    this.continuous = enabled;
-    if (this.recognition) {
-      this.recognition.continuous = enabled;
-    }
-  }
 }
-
-export const coreVoiceService = new CoreVoiceService();
-export default coreVoiceService;

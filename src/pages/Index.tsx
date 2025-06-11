@@ -5,8 +5,8 @@ import CommandInput from "@/components/dashboard/CommandInput";
 import TaskCard from "@/components/dashboard/TaskCard";
 import SystemStatus from "@/components/dashboard/SystemStatus";
 import QuickActions from "@/components/dashboard/QuickActions";
+import RealTimeDataPanel from "@/components/dashboard/RealTimeDataPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 const Index = () => {
   // Sample task data
@@ -46,14 +46,14 @@ const Index = () => {
       <div className="grid grid-cols-1 gap-6">
         <CommandInput />
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-2">
             <Card className="jarvis-hologram">
               <CardHeader>
                 <CardTitle className="text-xl font-bold jarvis-glow-text">Recent Tasks</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   {tasks.map((task, index) => (
                     <TaskCard key={index} {...task} />
                   ))}
@@ -62,8 +62,12 @@ const Index = () => {
             </Card>
           </div>
           
-          <div className="md:col-span-1">
+          <div className="lg:col-span-1">
             <SystemStatus />
+          </div>
+          
+          <div className="lg:col-span-1">
+            <RealTimeDataPanel />
           </div>
         </div>
         
