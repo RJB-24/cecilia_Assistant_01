@@ -101,11 +101,12 @@ class EnhancedGroqService {
     4. Explain your reasoning
     `;
 
-    return await nlpService.processText(reasoningPrompt, {
-      model: 'deepseek-r1-distill-llama-70b',
+    const result = await nlpService.processText(reasoningPrompt, {
       temperature: options.temperature || 0.3,
       maxTokens: options.maxTokens || 2048
     });
+
+    return result.content || result.text || '';
   }
 
   private async processWithVision(query: string, images: string[]): Promise<string> {
@@ -114,26 +115,26 @@ class EnhancedGroqService {
     }
 
     // Use the first image for now, can be extended for multiple images
-    const response = await nlpService.processImageWithText(images[0], query);
-    return response.response || response.content || '';
+    const result = await nlpService.processImageWithText(images[0], query);
+    return result.content || result.text || '';
   }
 
   private async processWithAgent(query: string, options: any): Promise<string> {
     // Use compound-beta for agent capabilities
     const result = await nlpService.processAgentCommand(query, {
-      model: 'compound-beta',
       temperature: options.temperature || 0.5
     });
 
-    return result.response || result.content || '';
+    return result.content || result.text || '';
   }
 
   private async processWithChat(query: string, options: any): Promise<string> {
-    return await nlpService.processText(query, {
-      model: 'llama-3.3-70b-versatile',
+    const result = await nlpService.processText(query, {
       temperature: options.temperature || 0.7,
       maxTokens: options.maxTokens || 1024
     });
+
+    return result.content || result.text || '';
   }
 
   private requiresReasoning(query: string): boolean {
