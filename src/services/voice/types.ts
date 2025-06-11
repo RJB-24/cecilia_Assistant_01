@@ -17,3 +17,9 @@ export interface VoiceResponse {
   message?: string;
   data?: any;
 }
+
+export interface VoiceRecordingOptions {
+  maxDuration?: number;
+  format?: string;
+  sampleRate?: number;
+}

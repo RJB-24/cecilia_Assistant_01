@@ -1,5 +1,6 @@
 
 import { VoiceServiceOptions } from '../types';
+import { SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionError } from '@/lib/types';
 
 export class CoreVoiceService {
   protected recognition: SpeechRecognition | null = null;
@@ -37,7 +38,7 @@ export class CoreVoiceService {
         this.listening = true;
       };
 
-      this.recognition.onresult = (event: any) => {
+      this.recognition.onresult = (event: SpeechRecognitionEvent) => {
         let interimTranscript = '';
         let finalTranscript = '';
 
@@ -57,7 +58,7 @@ export class CoreVoiceService {
         console.log('Final transcript:', this.finalTranscript);
       };
 
-      this.recognition.onerror = (event: any) => {
+      this.recognition.onerror = (event: SpeechRecognitionError) => {
         console.error('Speech recognition error:', event.error);
         this.listening = false;
       };
@@ -89,6 +90,27 @@ export class CoreVoiceService {
     this.language = language;
     if (this.recognition) {
       this.recognition.lang = language;
+    }
+  }
+
+  start(): void {
+    if (this.recognition && !this.listening) {
+      this.finalTranscript = '';
+      this.interimTranscript = '';
+      this.recognition.start();
+    }
+  }
+
+  stop(): void {
+    if (this.recognition && this.listening) {
+      this.recognition.stop();
+    }
+  }
+
+  abort(): void {
+    if (this.recognition) {
+      this.recognition.abort();
+      this.listening = false;
     }
   }
 }
