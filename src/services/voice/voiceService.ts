@@ -8,6 +8,7 @@ import { realtimeDataService } from '../realtimeDataService';
 
 export class VoiceService extends BaseVoiceService {
   private isMuted: boolean = false;
+  private isCurrentlySpeaking: boolean = false;
 
   constructor(options: VoiceServiceOptions = {}) {
     super(options);
@@ -15,23 +16,6 @@ export class VoiceService extends BaseVoiceService {
 
   async start(): Promise<void> {
     await super.start();
-    
-    // Get real-time context for dynamic welcome
-    const weatherData = await realtimeDataService.getCurrentWeather();
-    const newsData = await realtimeDataService.getLatestNews('technology', 1);
-    
-    let welcomeMessage = voicePersonalityService.getWelcomeMessage();
-    
-    // Add dynamic context
-    if (weatherData) {
-      welcomeMessage += ` The current weather in ${weatherData.location} is ${weatherData.temperature} degrees and ${weatherData.condition.toLowerCase()}.`;
-    }
-    
-    if (newsData.length > 0) {
-      welcomeMessage += ` In today's tech news: ${newsData[0].title}`;
-    }
-    
-    await this.speakText(welcomeMessage);
   }
 
   async processCommand(text: string): Promise<VoiceCommand> {
@@ -45,51 +29,70 @@ export class VoiceService extends BaseVoiceService {
   }
 
   private async handleCommandResponse(command: VoiceCommand): Promise<void> {
-    if (this.isMuted) return;
+    if (this.isMuted || this.isCurrentlySpeaking) return;
 
     let response = "";
     
-    switch (command.intent) {
-      case 'send_email':
-        response = `I'll help you draft an email${command.entities.recipient ? ` to ${command.entities.recipient}` : ''}. What would you like to say?`;
-        break;
-      case 'create_calendar_event':
-        response = "I'll schedule that event for you. Let me check your calendar for availability.";
-        break;
-      case 'analyze_data':
-        response = "I'll analyze the data and provide insights. This may take a moment.";
-        break;
-      case 'take_notes':
-        response = `Starting note-taking${command.entities.title ? ` for ${command.entities.title}` : ''}. I'm listening and will organize the information for you.`;
-        break;
-      case 'open_application':
-        response = `Opening ${command.entities.appName || 'the application'} now.`;
-        break;
-      case 'get_weather':
-        const weather = await realtimeDataService.getCurrentWeather();
-        response = `The current weather in ${weather.location} is ${weather.temperature} degrees celsius with ${weather.condition.toLowerCase()}. Humidity is at ${weather.humidity}%.`;
-        break;
-      case 'get_news':
-        const news = await realtimeDataService.getLatestNews('technology', 3);
-        response = `Here are the latest tech headlines: ${news.map(n => n.title).join('. ')}`;
-        break;
-      default:
-        response = "I understand. Let me process that for you.";
-    }
+    try {
+      switch (command.intent) {
+        case 'send_email':
+          response = `I'll help you draft an email${command.entities.recipient ? ` to ${command.entities.recipient}` : ''}. What would you like to say?`;
+          break;
+        case 'create_calendar_event':
+          response = "I'll schedule that event for you. Let me check your calendar for availability.";
+          break;
+        case 'analyze_data':
+          response = "I'll analyze the data and provide insights. This may take a moment.";
+          break;
+        case 'take_notes':
+          response = `Starting note-taking${command.entities.title ? ` for ${command.entities.title}` : ''}. I'm listening and will organize the information for you.`;
+          break;
+        case 'open_application':
+          response = `Opening ${command.entities.appName || 'the application'} now.`;
+          break;
+        case 'get_weather':
+          try {
+            const weather = await realtimeDataService.getCurrentWeather();
+            response = `The current weather in ${weather.location} is ${weather.temperature} degrees celsius with ${weather.condition.toLowerCase()}. Humidity is at ${weather.humidity}%.`;
+          } catch (error) {
+            response = "I'm having trouble getting the weather information right now.";
+          }
+          break;
+        case 'get_news':
+          try {
+            const news = await realtimeDataService.getLatestNews('technology', 3);
+            response = `Here are the latest tech headlines: ${news.map(n => n.title).join('. ')}`;
+          } catch (error) {
+            response = "I'm having trouble getting the news right now.";
+          }
+          break;
+        default:
+          response = "I understand. Let me process that for you.";
+      }
 
-    await this.speakText(response);
+      await this.speakText(response);
+    } catch (error) {
+      console.error('Error handling command response:', error);
+    }
   }
 
   async speakText(text: string): Promise<void> {
-    if (this.isMuted) return;
+    if (this.isMuted || this.isCurrentlySpeaking) return;
 
+    this.isCurrentlySpeaking = true;
+    
     try {
-      // Use Groq TTS first
-      await groqService.speakText(text, {
-        voice: voiceCommandService.getVoice()
-      });
-    } catch (error) {
-      console.error('Error with Groq TTS, falling back to browser:', error);
+      // Check if Groq is configured before attempting to use it
+      if (groqService.isConfigured()) {
+        try {
+          await groqService.speakText(text, {
+            voice: voiceCommandService.getVoice()
+          });
+          return;
+        } catch (error) {
+          console.error('Error with Groq TTS, falling back to browser:', error);
+        }
+      }
       
       // Fallback to browser TTS
       if ('speechSynthesis' in window) {
@@ -116,12 +119,25 @@ export class VoiceService extends BaseVoiceService {
             utterance.voice = femaleVoice;
           }
           
-          utterance.onend = () => resolve();
-          utterance.onerror = (error) => reject(error);
+          utterance.onend = () => {
+            this.isCurrentlySpeaking = false;
+            resolve();
+          };
+          utterance.onerror = (error) => {
+            this.isCurrentlySpeaking = false;
+            reject(error);
+          };
           
+          // Cancel any ongoing speech before starting new one
+          window.speechSynthesis.cancel();
           window.speechSynthesis.speak(utterance);
         });
       }
+      
+      throw new Error('No TTS available');
+    } catch (error) {
+      this.isCurrentlySpeaking = false;
+      console.error('Error speaking text:', error);
       throw error;
     }
   }

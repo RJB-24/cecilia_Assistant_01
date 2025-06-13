@@ -15,6 +15,7 @@ const ImmersiveAssistant: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [responseText, setResponseText] = useState('');
   const [assistantName] = useState('CECILIA');
+  const [hasSpokenWelcome, setHasSpokenWelcome] = useState(false);
 
   useEffect(() => {
     const initializeAssistant = async () => {
@@ -22,15 +23,17 @@ const ImmersiveAssistant: React.FC = () => {
         await assistantFeaturesService.initialize();
         setResponseText(`Hello, I'm ${assistantName}. I'm your advanced AI assistant ready to help with anything you need.`);
         
-        setTimeout(async () => {
-          if (!isMuted) {
+        // Only speak welcome message once and if not muted
+        if (!isMuted && !hasSpokenWelcome) {
+          setHasSpokenWelcome(true);
+          setTimeout(async () => {
             try {
               await voiceService.speakText(`Hello, I'm ${assistantName}. I'm your advanced AI assistant. I can help you with meetings, notes, calendar management, emails, data analysis, and much more. How may I assist you today?`);
             } catch (error) {
               console.log('Voice synthesis not available, continuing without audio');
             }
-          }
-        }, 1000);
+          }, 1000);
+        }
       } catch (error) {
         console.error('Error initializing assistant:', error);
         toast.error('Failed to initialize assistant');
@@ -38,7 +41,7 @@ const ImmersiveAssistant: React.FC = () => {
     };
 
     initializeAssistant();
-  }, [assistantName, isMuted]);
+  }, [assistantName, isMuted, hasSpokenWelcome]);
 
   const handleVoiceToggle = async () => {
     if (isListening) {
@@ -87,18 +90,27 @@ const ImmersiveAssistant: React.FC = () => {
       toast.info('Voice responses muted');
     } else {
       toast.info('Voice responses unmuted');
-      try {
-        voiceService.speakText('Voice responses are now unmuted');
-      } catch (error) {
-        console.log('Voice synthesis not available');
-      }
+      // Don't try to speak when unmuting to avoid errors
     }
   };
 
   return (
     <div className="h-screen w-full bg-gradient-to-br from-gray-900 via-blue-900 to-black relative overflow-hidden">
       <div style={{ width: '100%', height: '100%' }}>
-        <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
+        <Canvas 
+          camera={{ position: [0, 0, 8], fov: 60 }}
+          onCreated={({ gl }) => {
+            // Handle context loss
+            gl.domElement.addEventListener('webglcontextlost', (event) => {
+              event.preventDefault();
+              console.log('WebGL context lost, attempting to restore...');
+            });
+            
+            gl.domElement.addEventListener('webglcontextrestored', () => {
+              console.log('WebGL context restored');
+            });
+          }}
+        >
           <Suspense fallback={null}>
             <Environment preset="night" />
             <ambientLight intensity={0.3} />
