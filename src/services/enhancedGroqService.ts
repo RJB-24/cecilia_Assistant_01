@@ -1,4 +1,3 @@
-
 import { groqService } from './groqService';
 import { nlpService } from './nlp';
 
@@ -106,7 +105,7 @@ class EnhancedGroqService {
       maxTokens: options.maxTokens || 2048
     });
 
-    return result.content || result.text || '';
+    return result.text || '';
   }
 
   private async processWithVision(query: string, images: string[]): Promise<string> {
@@ -116,7 +115,7 @@ class EnhancedGroqService {
 
     // Use the first image for now, can be extended for multiple images
     const result = await nlpService.processImageWithText(images[0], query);
-    return result.content || result.text || '';
+    return result.text || '';
   }
 
   private async processWithAgent(query: string, options: any): Promise<string> {
@@ -125,7 +124,7 @@ class EnhancedGroqService {
       temperature: options.temperature || 0.5
     });
 
-    return result.content || result.text || '';
+    return result.text || '';
   }
 
   private async processWithChat(query: string, options: any): Promise<string> {
@@ -134,7 +133,7 @@ class EnhancedGroqService {
       maxTokens: options.maxTokens || 1024
     });
 
-    return result.content || result.text || '';
+    return result.text || '';
   }
 
   private requiresReasoning(query: string): boolean {
