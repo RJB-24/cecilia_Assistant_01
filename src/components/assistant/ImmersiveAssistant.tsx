@@ -97,22 +97,22 @@ const ImmersiveAssistant: React.FC = () => {
 
   return (
     <div className="h-screen w-full bg-gradient-to-br from-gray-900 via-blue-900 to-black relative overflow-hidden">
-      {/* Background Canvas */}
-      <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
-        <Suspense fallback={null}>
-          <Environment preset="night" />
-          <ambientLight intensity={0.3} />
-          <pointLight position={[10, 10, 10]} intensity={1} />
-          <AssistantSphere
-            isListening={isListening}
-            isSpeaking={isSpeaking}
-            responseText={responseText}
-          />
-          <OrbitControls enableZoom={false} enablePan={false} />
-        </Suspense>
-      </Canvas>
+      <div style={{ width: '100%', height: '100%' }}>
+        <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
+          <Suspense fallback={null}>
+            <Environment preset="night" />
+            <ambientLight intensity={0.3} />
+            <pointLight position={[10, 10, 10]} intensity={1} />
+            <AssistantSphere
+              isListening={isListening}
+              isSpeaking={isSpeaking}
+              responseText={responseText}
+            />
+            <OrbitControls enableZoom={false} enablePan={false} />
+          </Suspense>
+        </Canvas>
+      </div>
 
-      {/* UI Overlay */}
       <div className="absolute inset-0 pointer-events-none">
         <AssistantTopBar
           assistantName={assistantName}
