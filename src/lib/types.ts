@@ -1,3 +1,4 @@
+
 // Speech Recognition Types
 export interface SpeechRecognitionEvent extends Event {
   resultIndex: number;
@@ -52,22 +53,6 @@ declare global {
   interface Window {
     SpeechRecognition?: new () => SpeechRecognition;
     webkitSpeechRecognition?: new () => SpeechRecognition;
-  }
-}
-
-// Add Three.js JSX types for React Three Fiber
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      group: any;
-      mesh: any;
-      boxGeometry: any;
-      meshBasicMaterial: any;
-      meshPhongMaterial: any;
-      ambientLight: any;
-      pointLight: any;
-      directionalLight: any;
-    }
   }
 }
 

@@ -93,7 +93,11 @@ const ImmersiveAssistant: React.FC = () => {
         
         setTimeout(async () => {
           if (!isMuted) {
-            await voiceService.speakText(`Hello, I'm ${assistantName}. I'm your advanced AI assistant. I can help you with meetings, notes, calendar management, emails, data analysis, and much more. How may I assist you today?`);
+            try {
+              await voiceService.speakText(`Hello, I'm ${assistantName}. I'm your advanced AI assistant. I can help you with meetings, notes, calendar management, emails, data analysis, and much more. How may I assist you today?`);
+            } catch (error) {
+              console.log('Voice synthesis not available, continuing without audio');
+            }
           }
         }, 1000);
       } catch (error) {
@@ -118,7 +122,11 @@ const ImmersiveAssistant: React.FC = () => {
           setResponseText(response.message || 'Task completed successfully.');
           
           if (!isMuted) {
-            await voiceService.speakText(response.message || 'Task completed successfully.');
+            try {
+              await voiceService.speakText(response.message || 'Task completed successfully.');
+            } catch (error) {
+              console.log('Voice synthesis not available');
+            }
           }
           
           setIsSpeaking(false);
@@ -141,12 +149,18 @@ const ImmersiveAssistant: React.FC = () => {
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
-    voiceService.setMuted(!isMuted);
+    if (voiceService.setMuted) {
+      voiceService.setMuted(!isMuted);
+    }
     if (!isMuted) {
       toast.info('Voice responses muted');
     } else {
       toast.info('Voice responses unmuted');
-      voiceService.speakText('Voice responses are now unmuted');
+      try {
+        voiceService.speakText('Voice responses are now unmuted');
+      } catch (error) {
+        console.log('Voice synthesis not available');
+      }
     }
   };
 
