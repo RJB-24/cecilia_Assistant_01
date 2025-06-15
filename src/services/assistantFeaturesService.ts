@@ -1,8 +1,6 @@
-
 import { groqService } from './groqService';
 import { noteService } from './noteService';
 import { realtimeDataService } from './realtimeDataService';
-import { voiceService } from './voice/voiceService';
 
 export interface AssistantResponse {
   success: boolean;
@@ -36,12 +34,14 @@ export interface TaskRequest {
 class AssistantFeaturesService {
   private isInitialized = false;
   private activeRecording: MediaRecorder | null = null;
+  private lastResponse = '';
+  private lastResponseTime = 0;
+  private conversationContext: Array<{role: string, content: string}> = [];
 
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
     
     try {
-      // Initialize all services
       noteService.loadNotesFromStorage();
       this.isInitialized = true;
       console.log('Assistant features service initialized');
@@ -53,212 +53,154 @@ class AssistantFeaturesService {
 
   async processAdvancedCommand(command: string): Promise<AssistantResponse> {
     try {
-      const intent = await this.analyzeIntent(command);
+      // Prevent duplicate processing
+      if (this.isDuplicateRequest(command)) {
+        return {
+          success: true,
+          message: "I heard you. Is there anything else I can help you with?",
+          action: 'acknowledgment'
+        };
+      }
+
+      // Add context awareness
+      const contextualCommand = this.addContext(command);
+      const intent = await this.analyzeIntent(contextualCommand);
+      
+      let response: AssistantResponse;
       
       switch (intent.type) {
-        case 'schedule_meeting':
-          return await this.scheduleMeeting(intent.data);
-        
-        case 'send_email':
-          return await this.composeEmail(intent.data);
-        
-        case 'take_notes':
-          return await this.startNoteTaking(intent.data);
-        
-        case 'create_task':
-          return await this.createTask(intent.data);
-        
         case 'get_weather':
-          return await this.getWeatherInfo(intent.data);
-        
+          response = await this.getWeatherInfo(intent.data);
+          break;
         case 'get_news':
-          return await this.getNewsInfo(intent.data);
-        
-        case 'analyze_data':
-          return await this.analyzeData(intent.data);
-        
-        case 'open_application':
-          return await this.openApplication(intent.data);
-        
+          response = await this.getNewsInfo(intent.data);
+          break;
+        case 'schedule_meeting':
+          response = await this.scheduleMeeting(intent.data);
+          break;
+        case 'send_email':
+          response = await this.composeEmail(intent.data);
+          break;
+        case 'take_notes':
+          response = await this.startNoteTaking(intent.data);
+          break;
+        case 'create_task':
+          response = await this.createTask(intent.data);
+          break;
         case 'search_web':
-          return await this.searchWeb(intent.data);
-        
-        case 'set_reminder':
-          return await this.setReminder(intent.data);
-        
-        case 'manage_calendar':
-          return await this.manageCalendar(intent.data);
-        
-        case 'file_operations':
-          return await this.handleFileOperations(intent.data);
-        
+          response = await this.searchWeb(intent.data);
+          break;
         case 'conversation':
-          return await this.handleConversation(command);
-        
+          response = await this.handleConversation(command);
+          break;
         default:
-          return await this.handleGeneralQuery(command);
+          response = await this.handleGeneralQuery(command);
       }
+
+      this.updateConversationContext('user', command);
+      this.updateConversationContext('assistant', response.message);
+      this.lastResponse = response.message;
+      this.lastResponseTime = Date.now();
+
+      return response;
     } catch (error) {
       console.error('Error processing command:', error);
       return {
         success: false,
-        message: 'I encountered an error processing your request. Please try again.'
+        message: 'I encountered an error processing your request. Please try again or rephrase your question.'
       };
+    }
+  }
+
+  private isDuplicateRequest(command: string): boolean {
+    const now = Date.now();
+    const timeSinceLastResponse = now - this.lastResponseTime;
+    
+    // Consider it duplicate if same command within 2 seconds
+    return command.trim() === this.lastResponse && timeSinceLastResponse < 2000;
+  }
+
+  private addContext(command: string): string {
+    if (this.conversationContext.length === 0) {
+      return command;
+    }
+
+    // Add recent context for better understanding
+    const recentContext = this.conversationContext.slice(-2);
+    const contextString = recentContext.map(c => `${c.role}: ${c.content}`).join('\n');
+    
+    return `Previous context:\n${contextString}\n\nCurrent request: ${command}`;
+  }
+
+  private updateConversationContext(role: string, content: string) {
+    this.conversationContext.push({ role, content });
+    
+    // Keep only last 10 exchanges to manage memory
+    if (this.conversationContext.length > 20) {
+      this.conversationContext = this.conversationContext.slice(-20);
     }
   }
 
   private async analyzeIntent(command: string): Promise<{ type: string; data: any }> {
     if (!groqService.isConfigured()) {
-      return { type: 'conversation', data: { query: command } };
+      return this.simpleIntentAnalysis(command);
     }
 
-    const intentPrompt = `
-    Analyze this command and determine the intent and extract relevant data:
-    Command: "${command}"
-    
-    Return a JSON object with:
-    - type: one of [schedule_meeting, send_email, take_notes, create_task, get_weather, get_news, analyze_data, open_application, search_web, set_reminder, manage_calendar, file_operations, conversation]
-    - data: extracted parameters for the action
-    
-    Examples:
-    "Schedule a meeting with John tomorrow at 3pm" -> {"type": "schedule_meeting", "data": {"title": "Meeting with John", "date": "tomorrow", "time": "3pm", "attendees": ["John"]}}
-    "Send email to Sarah about project update" -> {"type": "send_email", "data": {"to": "Sarah", "subject": "Project Update"}}
-    "What's the weather in New York?" -> {"type": "get_weather", "data": {"location": "New York"}}
-    `;
+    const intentPrompt = `Analyze this command and respond with JSON only:
+Command: "${command}"
+
+Return: {"type": "intent_type", "data": {extracted_parameters}}
+
+Intent types: get_weather, get_news, schedule_meeting, send_email, take_notes, create_task, search_web, conversation
+
+Examples:
+"What's the weather?" -> {"type": "get_weather", "data": {}}
+"Latest tech news" -> {"type": "get_news", "data": {"category": "technology"}}
+"Schedule meeting tomorrow" -> {"type": "schedule_meeting", "data": {"date": "tomorrow"}}`;
 
     try {
       const response = await groqService.processCommand(intentPrompt);
       const parsed = JSON.parse(response);
       return parsed;
     } catch (error) {
-      console.error('Error analyzing intent:', error);
-      return { type: 'conversation', data: { query: command } };
+      return this.simpleIntentAnalysis(command);
     }
   }
 
-  private async scheduleMeeting(data: any): Promise<AssistantResponse> {
-    const meeting: MeetingRequest = {
-      title: data.title || 'New Meeting',
-      date: data.date || 'today',
-      time: data.time || '2:00 PM',
-      attendees: data.attendees || [],
-      duration: data.duration || 60
-    };
-
-    // Simulate meeting scheduling
-    const meetingId = `meeting_${Date.now()}`;
+  private simpleIntentAnalysis(command: string): { type: string; data: any } {
+    const lowerCommand = command.toLowerCase();
     
-    return {
-      success: true,
-      message: `Meeting "${meeting.title}" scheduled for ${meeting.date} at ${meeting.time}. ${
-        meeting.attendees.length > 0 ? `Attendees: ${meeting.attendees.join(', ')}` : ''
-      }`,
-      data: { meetingId, meeting },
-      action: 'meeting_scheduled'
-    };
-  }
-
-  private async composeEmail(data: any): Promise<AssistantResponse> {
-    const email: EmailRequest = {
-      to: data.to || '',
-      subject: data.subject || 'New Message',
-      content: data.content || '',
-      priority: data.priority || 'medium'
-    };
-
-    if (!email.to) {
-      return {
-        success: false,
-        message: 'Please specify the recipient for the email.'
-      };
+    if (lowerCommand.includes('weather')) {
+      return { type: 'get_weather', data: {} };
+    } else if (lowerCommand.includes('news')) {
+      return { type: 'get_news', data: { category: 'general' } };
+    } else if (lowerCommand.includes('schedule') || lowerCommand.includes('meeting')) {
+      return { type: 'schedule_meeting', data: {} };
+    } else if (lowerCommand.includes('email') || lowerCommand.includes('send')) {
+      return { type: 'send_email', data: {} };
+    } else if (lowerCommand.includes('note')) {
+      return { type: 'take_notes', data: {} };
+    } else if (lowerCommand.includes('search') || lowerCommand.includes('find')) {
+      return { type: 'search_web', data: { query: command } };
     }
-
-    // Generate email content if not provided
-    if (!email.content && groqService.isConfigured()) {
-      const contentPrompt = `Generate a professional email content for: ${email.subject}`;
-      email.content = await groqService.processCommand(contentPrompt);
-    }
-
-    return {
-      success: true,
-      message: `Email drafted to ${email.to} with subject "${email.subject}". Content ready for review.`,
-      data: { email },
-      action: 'email_drafted'
-    };
-  }
-
-  private async startNoteTaking(data: any): Promise<AssistantResponse> {
-    const title = data.title || `Notes - ${new Date().toLocaleString()}`;
     
-    try {
-      // Start audio recording for note-taking
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.activeRecording = new MediaRecorder(stream);
-      
-      const audioChunks: Blob[] = [];
-      this.activeRecording.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
-      
-      this.activeRecording.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        await noteService.generateNotesFromMedia(audioBlob, {
-          title,
-          source: 'meeting'
-        });
-      };
-      
-      this.activeRecording.start();
-      
-      return {
-        success: true,
-        message: `Started recording notes for "${title}". I'm listening and will organize everything for you.`,
-        data: { title, recording: true },
-        action: 'note_taking_started'
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: 'Unable to start note recording. Please check microphone permissions.'
-      };
-    }
-  }
-
-  private async createTask(data: any): Promise<AssistantResponse> {
-    const task: TaskRequest = {
-      title: data.title || 'New Task',
-      description: data.description || '',
-      priority: data.priority || 'medium',
-      dueDate: data.dueDate
-    };
-
-    const taskId = `task_${Date.now()}`;
-    
-    return {
-      success: true,
-      message: `Task "${task.title}" created with ${task.priority} priority.${
-        task.dueDate ? ` Due: ${task.dueDate}` : ''
-      }`,
-      data: { taskId, task },
-      action: 'task_created'
-    };
+    return { type: 'conversation', data: { query: command } };
   }
 
   private async getWeatherInfo(data: any): Promise<AssistantResponse> {
     try {
-      const location = data.location || 'current location';
-      const weather = await realtimeDataService.getCurrentWeather(location);
+      const weather = await realtimeDataService.getCurrentWeather();
       
       return {
         success: true,
-        message: `The weather in ${weather.location} is ${weather.temperature}°C with ${weather.condition.toLowerCase()}. Humidity: ${weather.humidity}%. Wind: ${weather.windSpeed} km/h.`,
+        message: `Current weather in ${weather.location}: ${weather.temperature}°C, ${weather.condition}. Humidity: ${weather.humidity}%, Wind: ${weather.windSpeed} km/h.`,
         data: { weather },
         action: 'weather_info'
       };
     } catch (error) {
       return {
         success: false,
-        message: 'Unable to fetch weather information at the moment.'
+        message: 'I\'m unable to fetch weather information right now. Please check if your weather API key is configured in Settings.'
       };
     }
   }
@@ -266,116 +208,28 @@ class AssistantFeaturesService {
   private async getNewsInfo(data: any): Promise<AssistantResponse> {
     try {
       const category = data.category || 'technology';
-      const count = data.count || 3;
-      const news = await realtimeDataService.getLatestNews(category, count);
+      const news = await realtimeDataService.getLatestNews(category, 3);
       
-      const headlines = news.map(n => n.title).join('. ');
+      const headlines = news.map(n => `• ${n.title}`).join('\n');
       
       return {
         success: true,
-        message: `Here are the latest ${category} headlines: ${headlines}`,
+        message: `Here are the latest ${category} headlines:\n\n${headlines}`,
         data: { news },
         action: 'news_info'
       };
     } catch (error) {
       return {
         success: false,
-        message: 'Unable to fetch news at the moment.'
+        message: 'I\'m unable to fetch news right now. Please check if your News API key is configured in Settings.'
       };
     }
-  }
-
-  private async analyzeData(data: any): Promise<AssistantResponse> {
-    const analysisType = data.type || 'general';
-    const dataSource = data.source || 'provided data';
-    
-    return {
-      success: true,
-      message: `Starting ${analysisType} analysis of ${dataSource}. I'll process the data and provide insights shortly.`,
-      data: { analysisType, dataSource },
-      action: 'data_analysis_started'
-    };
-  }
-
-  private async openApplication(data: any): Promise<AssistantResponse> {
-    const appName = data.appName || data.application;
-    
-    if (!appName) {
-      return {
-        success: false,
-        message: 'Please specify which application you\'d like me to open.'
-      };
-    }
-
-    // Simulate app opening
-    return {
-      success: true,
-      message: `Opening ${appName}. Please wait a moment while I launch the application.`,
-      data: { appName },
-      action: 'application_opened'
-    };
-  }
-
-  private async searchWeb(data: any): Promise<AssistantResponse> {
-    const query = data.query || data.search;
-    
-    if (!query) {
-      return {
-        success: false,
-        message: 'Please tell me what you\'d like to search for.'
-      };
-    }
-
-    return {
-      success: true,
-      message: `Searching the web for "${query}". I'll find the most relevant information for you.`,
-      data: { query },
-      action: 'web_search'
-    };
-  }
-
-  private async setReminder(data: any): Promise<AssistantResponse> {
-    const reminder = {
-      title: data.title || data.reminder,
-      time: data.time || data.when,
-      date: data.date
-    };
-
-    return {
-      success: true,
-      message: `Reminder set: "${reminder.title}"${reminder.time ? ` at ${reminder.time}` : ''}${reminder.date ? ` on ${reminder.date}` : ''}.`,
-      data: { reminder },
-      action: 'reminder_set'
-    };
-  }
-
-  private async manageCalendar(data: any): Promise<AssistantResponse> {
-    const action = data.action || 'view';
-    
-    return {
-      success: true,
-      message: `Calendar ${action} completed. Your schedule is up to date.`,
-      data: { action },
-      action: 'calendar_managed'
-    };
-  }
-
-  private async handleFileOperations(data: any): Promise<AssistantResponse> {
-    const operation = data.operation || 'access';
-    const fileName = data.fileName || 'file';
-    
-    return {
-      success: true,
-      message: `File operation "${operation}" completed for ${fileName}.`,
-      data: { operation, fileName },
-      action: 'file_operation'
-    };
   }
 
   private async handleConversation(query: string): Promise<AssistantResponse> {
     if (groqService.isConfigured()) {
       try {
-        const response = await groqService.processCommand(query);
+        const response = await groqService.processAgentCommand(query);
         return {
           success: true,
           message: response,
@@ -384,7 +238,7 @@ class AssistantFeaturesService {
       } catch (error) {
         return {
           success: true,
-          message: 'I understand what you\'re asking. How else can I help you today?',
+          message: 'I\'m here to help! You can ask me about weather, news, scheduling, or just have a conversation. What would you like to know?',
           action: 'conversation'
         };
       }
@@ -392,15 +246,73 @@ class AssistantFeaturesService {
 
     return {
       success: true,
-      message: 'I\'m here to help! You can ask me to schedule meetings, take notes, send emails, get weather updates, and much more.',
+      message: 'I\'m ready to assist you! To unlock my full capabilities, please configure your Groq API key in Settings. I can help with weather, news, scheduling, and much more.',
       action: 'conversation'
+    };
+  }
+
+  private async scheduleMeeting(data: any): Promise<AssistantResponse> {
+    return {
+      success: true,
+      message: `I'd be happy to help schedule a meeting. In a full implementation, I would integrate with your calendar system.`,
+      action: 'meeting_scheduled'
+    };
+  }
+
+  private async composeEmail(data: any): Promise<AssistantResponse> {
+    return {
+      success: true,
+      message: `I can help compose emails. For full functionality, please configure email integration in Settings.`,
+      action: 'email_drafted'
+    };
+  }
+
+  private async startNoteTaking(data: any): Promise<AssistantResponse> {
+    return {
+      success: true,
+      message: `I'm ready to take notes. Start speaking and I'll organize the information for you.`,
+      action: 'note_taking_started'
+    };
+  }
+
+  private async createTask(data: any): Promise<AssistantResponse> {
+    return {
+      success: true,
+      message: `Task noted. In a full implementation, this would be added to your task management system.`,
+      action: 'task_created'
+    };
+  }
+
+  private async searchWeb(data: any): Promise<AssistantResponse> {
+    if (groqService.isConfigured()) {
+      try {
+        const searchQuery = `Search for: ${data.query}`;
+        const response = await groqService.processAgentCommand(searchQuery);
+        return {
+          success: true,
+          message: response,
+          action: 'web_search'
+        };
+      } catch (error) {
+        return {
+          success: true,
+          message: `I understand you want to search for "${data.query}". With agent mode enabled, I can help find current information about that topic.`,
+          action: 'web_search'
+        };
+      }
+    }
+
+    return {
+      success: true,
+      message: `I'd search for "${data.query}" but need API configuration for real-time search capabilities.`,
+      action: 'web_search'
     };
   }
 
   private async handleGeneralQuery(query: string): Promise<AssistantResponse> {
     return {
       success: true,
-      message: `I'm processing your request: "${query}". Let me help you with that.`,
+      message: `I understand you're asking about "${query}". How can I help you with that specifically?`,
       action: 'general_query'
     };
   }
@@ -410,6 +322,12 @@ class AssistantFeaturesService {
       this.activeRecording.stop();
       this.activeRecording = null;
     }
+  }
+
+  clearConversationContext(): void {
+    this.conversationContext = [];
+    this.lastResponse = '';
+    this.lastResponseTime = 0;
   }
 }
 

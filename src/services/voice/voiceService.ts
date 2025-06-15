@@ -1,4 +1,3 @@
-
 import { voiceCommandService } from './features/voiceCommandService';
 import { voicePersonalityService } from './features/voicePersonalityService';
 import { BaseVoiceService } from './baseVoiceService';
@@ -19,55 +18,87 @@ export class VoiceService extends BaseVoiceService {
   }
 
   async processCommand(text: string): Promise<VoiceCommand> {
-    voicePersonalityService.updateLastInteraction();
-    const command = await voiceCommandService.processCommand(text);
+    // Check for command repetition
+    if (!this.shouldProcessCommand(text)) {
+      return {
+        text,
+        confidence: 0.5,
+        intent: 'duplicate',
+        entities: {}
+      };
+    }
+
+    this.setProcessing(true);
     
-    // Add intelligent response based on command
-    await this.handleCommandResponse(command);
-    
-    return command;
+    try {
+      voicePersonalityService.updateLastInteraction();
+      const command = await voiceCommandService.processCommand(text);
+      
+      // Add intelligent response based on command
+      await this.handleCommandResponse(command);
+      
+      return command;
+    } finally {
+      this.setProcessing(false);
+    }
   }
 
   private async handleCommandResponse(command: VoiceCommand): Promise<void> {
-    if (this.isMuted || this.isCurrentlySpeaking) return;
+    if (this.isMuted || this.isCurrentlySpeaking || command.intent === 'duplicate') return;
 
     let response = "";
     
     try {
       switch (command.intent) {
-        case 'send_email':
-          response = `I'll help you draft an email${command.entities.recipient ? ` to ${command.entities.recipient}` : ''}. What would you like to say?`;
-          break;
-        case 'create_calendar_event':
-          response = "I'll schedule that event for you. Let me check your calendar for availability.";
-          break;
-        case 'analyze_data':
-          response = "I'll analyze the data and provide insights. This may take a moment.";
-          break;
-        case 'take_notes':
-          response = `Starting note-taking${command.entities.title ? ` for ${command.entities.title}` : ''}. I'm listening and will organize the information for you.`;
-          break;
-        case 'open_application':
-          response = `Opening ${command.entities.appName || 'the application'} now.`;
-          break;
         case 'get_weather':
           try {
             const weather = await realtimeDataService.getCurrentWeather();
-            response = `The current weather in ${weather.location} is ${weather.temperature} degrees celsius with ${weather.condition.toLowerCase()}. Humidity is at ${weather.humidity}%.`;
+            response = `Current weather in ${weather.location}: ${weather.temperature}°C, ${weather.condition}. Humidity is ${weather.humidity}%.`;
           } catch (error) {
-            response = "I'm having trouble getting the weather information right now.";
+            response = "I need a weather API key to get current weather information.";
           }
           break;
+
         case 'get_news':
           try {
-            const news = await realtimeDataService.getLatestNews('technology', 3);
-            response = `Here are the latest tech headlines: ${news.map(n => n.title).join('. ')}`;
+            const news = await realtimeDataService.getLatestNews('technology', 2);
+            response = `Latest tech news: ${news.map(n => n.title).slice(0, 2).join('. ')}`;
           } catch (error) {
-            response = "I'm having trouble getting the news right now.";
+            response = "I need a news API key to get current headlines.";
           }
           break;
+
+        case 'send_email':
+          response = `I'll help you with email${command.entities.recipient ? ` to ${command.entities.recipient}` : ''}. What would you like to say?`;
+          break;
+
+        case 'create_calendar_event':
+          response = "I'll help you schedule that. What's the meeting about?";
+          break;
+
+        case 'take_notes':
+          response = `Starting note-taking${command.entities.title ? ` for ${command.entities.title}` : ''}. Go ahead, I'm listening.`;
+          break;
+
+        case 'open_application':
+          response = `Opening ${command.entities.appName || 'the application'}.`;
+          break;
+
         default:
-          response = "I understand. Let me process that for you.";
+          // Use Groq for conversational responses
+          if (groqService.isConfigured()) {
+            try {
+              response = await groqService.processCommand(command.text);
+              // Keep responses concise for voice
+              if (response.length > 200) {
+                response = response.substring(0, 200) + "...";
+              }
+            } catch (error) {
+              response = "I understand. How else can I help you?";
+            }
+          } else {
+            response = "I understand. Please configure the Groq API key for full conversation capabilities.";
+          }
       }
 
       await this.speakText(response);
@@ -82,7 +113,7 @@ export class VoiceService extends BaseVoiceService {
     this.isCurrentlySpeaking = true;
     
     try {
-      // Check if Groq is configured before attempting to use it
+      // Try Groq TTS first if configured
       if (groqService.isConfigured()) {
         try {
           await groqService.speakText(text, {
@@ -90,33 +121,34 @@ export class VoiceService extends BaseVoiceService {
           });
           return;
         } catch (error) {
-          console.error('Error with Groq TTS, falling back to browser:', error);
+          console.error('Groq TTS error, falling back to browser:', error);
         }
       }
       
       // Fallback to browser TTS
       if ('speechSynthesis' in window) {
         return new Promise((resolve, reject) => {
+          // Cancel any ongoing speech
+          window.speechSynthesis.cancel();
+          
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = this.language;
           utterance.rate = 0.9;
           utterance.pitch = 1.1;
           utterance.volume = 0.8;
           
-          // Try to find a female voice
+          // Try to find a good voice
           const voices = window.speechSynthesis.getVoices();
-          const femaleVoice = voices.find(voice => 
+          const preferredVoice = voices.find(voice => 
             voice.name.toLowerCase().includes('female') || 
             voice.name.includes('Samantha') ||
             voice.name.includes('Karen') ||
-            voice.name.includes('Tessa') ||
-            voice.name.includes('Victoria') ||
             voice.name.includes('Zira') ||
-            voice.lang.includes('en') && voice.name.includes('Google')
+            (voice.lang.includes('en') && voice.name.includes('Google'))
           );
           
-          if (femaleVoice) {
-            utterance.voice = femaleVoice;
+          if (preferredVoice) {
+            utterance.voice = preferredVoice;
           }
           
           utterance.onend = () => {
@@ -128,8 +160,6 @@ export class VoiceService extends BaseVoiceService {
             reject(error);
           };
           
-          // Cancel any ongoing speech before starting new one
-          window.speechSynthesis.cancel();
           window.speechSynthesis.speak(utterance);
         });
       }
@@ -150,18 +180,6 @@ export class VoiceService extends BaseVoiceService {
     return voiceCommandService.getVoice();
   }
 
-  setPersonalityTrait(trait: 'humor' | 'proactive' | 'formality', value: boolean | string): void {
-    voicePersonalityService.setPersonalityTrait(trait, value);
-  }
-
-  setWelcomeMessage(message: string): void {
-    voicePersonalityService.setWelcomeMessage(message);
-  }
-
-  addImportantEvent(date: Date, description: string): void {
-    voicePersonalityService.addImportantEvent(date, description);
-  }
-
   setMuted(muted: boolean): void {
     this.isMuted = muted;
     if (muted && 'speechSynthesis' in window) {
@@ -171,6 +189,11 @@ export class VoiceService extends BaseVoiceService {
 
   isSpeechMuted(): boolean {
     return this.isMuted;
+  }
+
+  // Additional method to refresh API configuration
+  refreshConfiguration(): void {
+    groqService.reconfigure();
   }
 }
 
