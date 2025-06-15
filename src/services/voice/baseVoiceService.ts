@@ -26,7 +26,7 @@ export class BaseVoiceService {
     if (typeof window !== 'undefined' && 
         ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       
-      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       this.recognition = new SpeechRecognitionAPI();
       
       this.recognition.lang = this.language;
@@ -56,7 +56,7 @@ export class BaseVoiceService {
         }
       };
       
-      this.recognition.onerror = (event: any) => {
+      this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error);
         this.listening = false;
         if (this.onError) {

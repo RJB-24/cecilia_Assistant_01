@@ -9,7 +9,7 @@ export interface GroqServiceOptions {
 
 class GroqService {
   private client: Groq | null = null;
-  private isConfigured: boolean = false;
+  private configured: boolean = false;
 
   constructor() {
     this.initializeClient();
@@ -23,14 +23,14 @@ class GroqService {
           apiKey: apiKey,
           dangerouslyAllowBrowser: true
         });
-        this.isConfigured = true;
+        this.configured = true;
         console.log('Groq client initialized successfully');
       } catch (error) {
         console.error('Error initializing Groq client:', error);
-        this.isConfigured = false;
+        this.configured = false;
       }
     } else {
-      this.isConfigured = false;
+      this.configured = false;
     }
   }
 
@@ -50,12 +50,12 @@ class GroqService {
     this.initializeClient();
   }
 
-  isConfigured(): boolean {
-    return this.isConfigured && this.client !== null;
+  public isConfigured(): boolean {
+    return this.configured && this.client !== null;
   }
 
   async processCommand(command: string, options: GroqServiceOptions = {}): Promise<string> {
-    if (!this.isConfigured || !this.client) {
+    if (!this.configured || !this.client) {
       throw new Error('Groq API is not configured. Please add your API key in Settings.');
     }
 
@@ -84,7 +84,7 @@ class GroqService {
   }
 
   async processAgentCommand(command: string, options: GroqServiceOptions = {}): Promise<string> {
-    if (!this.isConfigured || !this.client) {
+    if (!this.configured || !this.client) {
       throw new Error('Groq API is not configured. Please add your API key in Settings.');
     }
 
@@ -114,7 +114,7 @@ class GroqService {
   }
 
   async speakText(text: string, options: { voice?: string } = {}): Promise<void> {
-    if (!this.isConfigured || !this.client) {
+    if (!this.configured || !this.client) {
       throw new Error('Groq API is not configured');
     }
 
@@ -140,6 +140,29 @@ class GroqService {
       URL.revokeObjectURL(audioUrl);
     } catch (error) {
       console.error('Text-to-speech error:', error);
+      throw error;
+    }
+  }
+
+  async transcribeAudio(audioBlob: Blob): Promise<string> {
+    if (!this.configured || !this.client) {
+      throw new Error('Groq API is not configured');
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'audio.wav');
+      formData.append('model', 'whisper-large-v3');
+
+      const response = await this.client.audio.transcriptions.create({
+        file: audioBlob,
+        model: 'whisper-large-v3',
+        language: 'en'
+      });
+
+      return response.text || '';
+    } catch (error) {
+      console.error('Audio transcription error:', error);
       throw error;
     }
   }
