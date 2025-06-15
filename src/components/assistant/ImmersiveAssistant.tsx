@@ -9,18 +9,26 @@ import AssistantSphere from './AssistantSphere';
 import AssistantTopBar from './AssistantTopBar';
 import AssistantBottomControls from './AssistantBottomControls';
 
-// Error boundary component for Three.js
-class ThreeJSErrorBoundary extends React.Component {
-  constructor(props) {
+// Error boundary component for Three.js with proper TypeScript types
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+}
+
+class ThreeJSErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Three.js error:', error, errorInfo);
   }
 
