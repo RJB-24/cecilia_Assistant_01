@@ -9,6 +9,39 @@ import AssistantSphere from './AssistantSphere';
 import AssistantTopBar from './AssistantTopBar';
 import AssistantBottomControls from './AssistantBottomControls';
 
+// Error boundary component for Three.js
+class ThreeJSErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Three.js error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-900 via-blue-900 to-black">
+          <div className="text-white text-center">
+            <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-blue-600 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-blue-400 animate-pulse"></div>
+            </div>
+            <p className="text-lg">Assistant Active</p>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const ImmersiveAssistant: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -16,6 +49,7 @@ const ImmersiveAssistant: React.FC = () => {
   const [responseText, setResponseText] = useState('');
   const [assistantName] = useState('CECILIA');
   const [hasSpokenWelcome, setHasSpokenWelcome] = useState(false);
+  const [canvasKey, setCanvasKey] = useState(0);
 
   useEffect(() => {
     const initializeAssistant = async () => {
@@ -90,39 +124,48 @@ const ImmersiveAssistant: React.FC = () => {
       toast.info('Voice responses muted');
     } else {
       toast.info('Voice responses unmuted');
-      // Don't try to speak when unmuting to avoid errors
     }
+  };
+
+  const handleCanvasError = () => {
+    console.log('Canvas error detected, reloading...');
+    setCanvasKey(prev => prev + 1);
   };
 
   return (
     <div className="h-screen w-full bg-gradient-to-br from-gray-900 via-blue-900 to-black relative overflow-hidden">
       <div style={{ width: '100%', height: '100%' }}>
-        <Canvas 
-          camera={{ position: [0, 0, 8], fov: 60 }}
-          onCreated={({ gl }) => {
-            // Handle context loss
-            gl.domElement.addEventListener('webglcontextlost', (event) => {
-              event.preventDefault();
-              console.log('WebGL context lost, attempting to restore...');
-            });
-            
-            gl.domElement.addEventListener('webglcontextrestored', () => {
-              console.log('WebGL context restored');
-            });
-          }}
-        >
-          <Suspense fallback={null}>
-            <Environment preset="night" />
-            <ambientLight intensity={0.3} />
-            <pointLight position={[10, 10, 10]} intensity={1} />
-            <AssistantSphere
-              isListening={isListening}
-              isSpeaking={isSpeaking}
-              responseText={responseText}
-            />
-            <OrbitControls enableZoom={false} enablePan={false} />
-          </Suspense>
-        </Canvas>
+        <ThreeJSErrorBoundary>
+          <Canvas 
+            key={canvasKey}
+            camera={{ position: [0, 0, 8], fov: 60 }}
+            onCreated={({ gl }) => {
+              gl.domElement.addEventListener('webglcontextlost', (event) => {
+                event.preventDefault();
+                console.log('WebGL context lost, preventing default and restarting...');
+                setTimeout(() => {
+                  handleCanvasError();
+                }, 100);
+              });
+              
+              gl.domElement.addEventListener('webglcontextrestored', () => {
+                console.log('WebGL context restored');
+              });
+            }}
+          >
+            <Suspense fallback={null}>
+              <Environment preset="night" />
+              <ambientLight intensity={0.3} />
+              <pointLight position={[10, 10, 10]} intensity={1} />
+              <AssistantSphere
+                isListening={isListening}
+                isSpeaking={isSpeaking}
+                responseText={responseText}
+              />
+              <OrbitControls enableZoom={false} enablePan={false} />
+            </Suspense>
+          </Canvas>
+        </ThreeJSErrorBoundary>
       </div>
 
       <div className="absolute inset-0 pointer-events-none">
