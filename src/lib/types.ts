@@ -1,5 +1,6 @@
 
-// Speech Recognition Types
+// Speech Recognition Types - using simple interfaces to avoid conflicts with voice service types
+
 export interface SpeechRecognitionEvent extends Event {
   resultIndex: number;
   results: SpeechRecognitionResultList;
@@ -47,13 +48,6 @@ export interface SpeechRecognition extends EventTarget {
   start(): void;
   stop(): void;
   abort(): void;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition?: new () => SpeechRecognition;
-    webkitSpeechRecognition?: new () => SpeechRecognition;
-  }
 }
 
 export {};

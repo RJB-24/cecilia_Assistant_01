@@ -2,8 +2,14 @@
 export interface VoiceServiceOptions {
   language?: string;
   continuous?: boolean;
+  interimResults?: boolean;
   onInterim?: (text: string) => void;
   onError?: (error: string) => void;
+}
+
+export interface VoiceRecordingOptions {
+  title?: string;
+  format?: string;
 }
 
 export interface VoiceCommand {
@@ -26,11 +32,11 @@ export interface WakeWordConfig {
   phrases: string[];
 }
 
-// Global speech recognition types
+// Global speech recognition types - using declare global to avoid conflicts
 declare global {
   interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
   }
 }
 

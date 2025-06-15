@@ -26,7 +26,7 @@ export class BaseVoiceService {
     if (typeof window !== 'undefined' && 
         ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       
-      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       this.recognition = new SpeechRecognitionAPI();
       
       this.recognition.lang = this.language;
@@ -34,7 +34,7 @@ export class BaseVoiceService {
       this.recognition.interimResults = true;
       this.recognition.maxAlternatives = 1;
       
-      this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+      this.recognition.onresult = (event: any) => {
         let interimTranscript = '';
         let finalTranscript = '';
         
@@ -56,7 +56,7 @@ export class BaseVoiceService {
         }
       };
       
-      this.recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      this.recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         this.listening = false;
         if (this.onError) {

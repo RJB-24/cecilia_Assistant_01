@@ -1,4 +1,3 @@
-
 import Groq from 'groq-sdk';
 
 export interface GroqServiceOptions {
@@ -150,12 +149,11 @@ class GroqService {
     }
 
     try {
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'audio.wav');
-      formData.append('model', 'whisper-large-v3');
+      // Convert Blob to File to match Groq SDK requirements
+      const audioFile = new File([audioBlob], 'audio.wav', { type: 'audio/wav' });
 
       const response = await this.client.audio.transcriptions.create({
-        file: audioBlob,
+        file: audioFile,
         model: 'whisper-large-v3',
         language: 'en'
       });
