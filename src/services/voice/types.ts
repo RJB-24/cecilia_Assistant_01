@@ -32,15 +32,8 @@ export interface WakeWordConfig {
   phrases: string[];
 }
 
-// Global speech recognition types - using declare global to avoid conflicts
-declare global {
-  interface Window {
-    SpeechRecognition?: new () => SpeechRecognition;
-    webkitSpeechRecognition?: new () => SpeechRecognition;
-  }
-}
-
-interface SpeechRecognition extends EventTarget {
+// Export interfaces for use in other modules
+export interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   grammars: SpeechGrammarList;
   interimResults: boolean;
@@ -63,35 +56,35 @@ interface SpeechRecognition extends EventTarget {
   stop(): void;
 }
 
-interface SpeechRecognitionEvent extends Event {
+export interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;
   readonly results: SpeechRecognitionResultList;
 }
 
-interface SpeechRecognitionErrorEvent extends Event {
+export interface SpeechRecognitionErrorEvent extends Event {
   readonly error: string;
   readonly message: string;
 }
 
-interface SpeechRecognitionResultList {
+export interface SpeechRecognitionResultList {
   readonly length: number;
   item(index: number): SpeechRecognitionResult;
   [index: number]: SpeechRecognitionResult;
 }
 
-interface SpeechRecognitionResult {
+export interface SpeechRecognitionResult {
   readonly isFinal: boolean;
   readonly length: number;
   item(index: number): SpeechRecognitionAlternative;
   [index: number]: SpeechRecognitionAlternative;
 }
 
-interface SpeechRecognitionAlternative {
+export interface SpeechRecognitionAlternative {
   readonly confidence: number;
   readonly transcript: string;
 }
 
-interface SpeechGrammarList {
+export interface SpeechGrammarList {
   readonly length: number;
   addFromString(string: string, weight?: number): void;
   addFromURI(src: string, weight?: number): void;
@@ -99,7 +92,15 @@ interface SpeechGrammarList {
   [index: number]: SpeechGrammar;
 }
 
-interface SpeechGrammar {
+export interface SpeechGrammar {
   src: string;
   weight: number;
+}
+
+// Global speech recognition types - using declare global to avoid conflicts
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
+  }
 }
