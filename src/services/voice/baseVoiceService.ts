@@ -1,5 +1,5 @@
 
-import { VoiceServiceOptions } from './types';
+import { VoiceServiceOptions, SpeechRecognition, SpeechRecognitionEvent, SpeechRecognitionErrorEvent } from './types';
 
 export class BaseVoiceService {
   protected recognition: SpeechRecognition | null = null;
