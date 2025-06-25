@@ -9,14 +9,12 @@ interface MainLayoutProps {
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   return (
-    <div className="flex h-screen bg-jarvis-bg font-orbitron">
+    <div className="flex h-screen bg-background font-sans">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-auto p-6">
-          <div className="jarvis-hologram p-6">
-            {children}
-          </div>
+        <main className="flex-1 overflow-auto">
+          {children}
         </main>
       </div>
     </div>
