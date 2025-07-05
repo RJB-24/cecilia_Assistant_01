@@ -1,8 +1,7 @@
 
-import React, { useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Sphere, Text } from '@react-three/drei';
-import * as THREE from 'three';
+import React from 'react';
+import { Text } from '@react-three/drei';
+import EnergyBall from './EnergyBall';
 
 interface ThreeJSSceneProps {
   isListening: boolean;
@@ -10,58 +9,40 @@ interface ThreeJSSceneProps {
   responseText: string;
 }
 
-// This component is isolated to prevent Lovable tagging conflicts
 const ThreeJSScene: React.FC<ThreeJSSceneProps> = ({ isListening, isSpeaking, responseText }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += 0.01;
-      if (isListening) {
-        meshRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 5) * 0.1);
-      } else if (isSpeaking) {
-        meshRef.current.scale.setScalar(1 + Math.sin(state.clock.elapsedTime * 3) * 0.05);
-      } else {
-        meshRef.current.scale.setScalar(1);
-      }
-    }
-  });
-
   return (
     <>
-      <Sphere
-        ref={meshRef}
-        args={[2, 64, 64]}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
-      >
-        <meshPhongMaterial
-          color={isListening ? '#00ff88' : isSpeaking ? '#ff6b35' : '#0088ff'}
-          transparent
-          opacity={0.8}
-          wireframe={hovered}
-        />
-      </Sphere>
-      
-      {Array.from({ length: 20 }).map((_, i) => (
-        <Sphere key={i} args={[0.05]} position={[
-          Math.sin(i) * 3,
-          Math.cos(i) * 3,
-          Math.sin(i * 0.5) * 3
-        ]}>
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.6} />
-        </Sphere>
-      ))}
+      {/* Enhanced lighting for better energy ball visibility */}
+      <ambientLight intensity={0.4} />
+      <pointLight position={[10, 10, 10]} intensity={1.5} color="#40e0d0" />
+      <pointLight position={[-10, -10, -10]} intensity={0.8} color="#00bcd4" />
+      <spotLight
+        position={[0, 10, 0]}
+        angle={0.3}
+        penumbra={1}
+        intensity={1}
+        castShadow
+        color="#00ff88"
+      />
 
+      {/* Main Energy Ball */}
+      <EnergyBall
+        isListening={isListening}
+        isSpeaking={isSpeaking}
+        responseText={responseText}
+      />
+
+      {/* Response text display */}
       {responseText && (
         <Text
-          position={[0, -3, 0]}
-          fontSize={0.3}
+          position={[0, -4, 0]}
+          fontSize={0.4}
           color="#ffffff"
           anchorX="center"
           anchorY="middle"
-          maxWidth={8}
+          maxWidth={12}
+          textAlign="center"
+          font="/fonts/roboto-regular.woff"
         >
           {responseText}
         </Text>

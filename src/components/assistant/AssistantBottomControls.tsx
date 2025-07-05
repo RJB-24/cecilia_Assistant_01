@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, Sparkles } from 'lucide-react';
 
 interface AssistantBottomControlsProps {
   isListening: boolean;
@@ -17,32 +17,55 @@ const AssistantBottomControls: React.FC<AssistantBottomControlsProps> = ({
 }) => {
   return (
     <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-auto">
-      <div className="flex flex-col items-center space-y-4">
-        {/* Response Text */}
-        <Card className="bg-black/50 backdrop-blur-sm border-white/20 max-w-2xl">
-          <CardContent className="p-4">
-            <p className="text-white text-center min-h-[2rem] flex items-center justify-center">
-              {responseText || 'Waiting for your command...'}
-            </p>
+      <div className="flex flex-col items-center space-y-6">
+        {/* Response Text Display */}
+        <Card className="bg-black/40 backdrop-blur-lg border border-cyan-400/30 max-w-4xl shadow-2xl shadow-cyan-400/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center min-h-[3rem]">
+              {responseText ? (
+                <p className="text-white text-center text-lg leading-relaxed">
+                  {responseText}
+                </p>
+              ) : (
+                <div className="flex items-center space-x-2 text-white/60">
+                  <Sparkles className="h-5 w-5 animate-pulse" />
+                  <span className="text-lg">Ready to assist you...</span>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Voice Button */}
-        <Button
-          onClick={onVoiceToggle}
-          size="lg"
-          className={`w-20 h-20 rounded-full ${
-            isListening 
-              ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
-              : 'bg-blue-600 hover:bg-blue-700'
-          } text-white shadow-2xl transform transition-all duration-200 hover:scale-110`}
-        >
-          {isListening ? <MicOff size={32} /> : <Mic size={32} />}
-        </Button>
+        {/* Voice Control Button */}
+        <div className="flex flex-col items-center space-y-4">
+          <Button
+            onClick={onVoiceToggle}
+            size="lg"
+            className={`w-24 h-24 rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl ${
+              isListening 
+                ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 animate-pulse shadow-red-500/50' 
+                : 'bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 shadow-cyan-500/50'
+            }`}
+            disabled={false}
+          >
+            {isListening ? <MicOff size={36} /> : <Mic size={36} />}
+          </Button>
 
-        {/* Quick Actions */}
-        <div className="flex space-x-2 text-xs text-white/70">
-          <span>Say: "Schedule a meeting" • "Take notes" • "Send email" • "Analyze data"</span>
+          {/* Status indicator */}
+          <div className="text-center">
+            <p className="text-white/80 text-sm font-medium">
+              {isListening ? 'Click to stop listening' : 'Click to start voice command'}
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Command Suggestions */}
+        <div className="flex flex-wrap justify-center gap-2 max-w-4xl text-xs text-white/50">
+          <span className="bg-white/10 px-3 py-1 rounded-full">"What's the weather?"</span>
+          <span className="bg-white/10 px-3 py-1 rounded-full">"Schedule a meeting"</span>
+          <span className="bg-white/10 px-3 py-1 rounded-full">"Take notes"</span>
+          <span className="bg-white/10 px-3 py-1 rounded-full">"Send an email"</span>
+          <span className="bg-white/10 px-3 py-1 rounded-full">"Analyze data"</span>
         </div>
       </div>
     </div>

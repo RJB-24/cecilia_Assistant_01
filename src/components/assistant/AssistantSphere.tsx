@@ -8,7 +8,11 @@ interface AssistantSphereProps {
   responseText: string;
 }
 
-const AssistantSphere: React.FC<AssistantSphereProps> = ({ isListening, isSpeaking, responseText }) => {
+const AssistantSphere: React.FC<AssistantSphereProps> = ({ 
+  isListening, 
+  isSpeaking, 
+  responseText 
+}) => {
   return (
     <ThreeJSScene 
       isListening={isListening}

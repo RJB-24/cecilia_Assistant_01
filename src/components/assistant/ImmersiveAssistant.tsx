@@ -9,7 +9,7 @@ import AssistantSphere from './AssistantSphere';
 import AssistantTopBar from './AssistantTopBar';
 import AssistantBottomControls from './AssistantBottomControls';
 
-// Error boundary component for Three.js with proper TypeScript types
+// Error boundary component for Three.js
 interface ErrorBoundaryState {
   hasError: boolean;
 }
@@ -25,11 +25,12 @@ class ThreeJSErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    console.error('ThreeJS Error:', error);
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Three.js error:', error, errorInfo);
+    console.error('Three.js error caught:', error, errorInfo);
   }
 
   render() {
@@ -37,10 +38,11 @@ class ThreeJSErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       return (
         <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-900 via-blue-900 to-black">
           <div className="text-white text-center">
-            <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-blue-600 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-blue-400 animate-pulse"></div>
+            <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gradient-to-r from-cyan-400 to-teal-400 flex items-center justify-center animate-pulse">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 animate-ping"></div>
             </div>
-            <p className="text-lg">Assistant Active</p>
+            <p className="text-lg font-semibold">CECILIA is Active</p>
+            <p className="text-sm text-gray-300 mt-2">Advanced AI Assistant Ready</p>
           </div>
         </div>
       );
@@ -57,28 +59,46 @@ const ImmersiveAssistant: React.FC = () => {
   const [responseText, setResponseText] = useState('');
   const [assistantName] = useState('CECILIA');
   const [hasSpokenWelcome, setHasSpokenWelcome] = useState(false);
-  const [canvasKey, setCanvasKey] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Get current time-based greeting
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   useEffect(() => {
     const initializeAssistant = async () => {
       try {
+        console.log('Initializing CECILIA Assistant...');
         await assistantFeaturesService.initialize();
-        setResponseText(`Hello, I'm ${assistantName}. I'm your advanced AI assistant ready to help with anything you need.`);
         
-        // Only speak welcome message once and if not muted
+        const greeting = `${getTimeBasedGreeting()}! I'm ${assistantName}, your advanced AI companion. I'm ready to assist you with anything you need.`;
+        setResponseText(greeting);
+        setIsInitialized(true);
+        
+        // Speak welcome message if not muted
         if (!isMuted && !hasSpokenWelcome) {
           setHasSpokenWelcome(true);
           setTimeout(async () => {
             try {
-              await voiceService.speakText(`Hello, I'm ${assistantName}. I'm your advanced AI assistant. I can help you with meetings, notes, calendar management, emails, data analysis, and much more. How may I assist you today?`);
+              setIsSpeaking(true);
+              await voiceService.speakText(`${greeting} You can activate me by clicking the microphone button or simply start speaking. How may I help you today?`);
+              setIsSpeaking(false);
             } catch (error) {
               console.log('Voice synthesis not available, continuing without audio');
+              setIsSpeaking(false);
             }
-          }, 1000);
+          }, 2000);
         }
+        
+        toast.success('CECILIA Assistant activated successfully');
       } catch (error) {
         console.error('Error initializing assistant:', error);
-        toast.error('Failed to initialize assistant');
+        toast.error('Failed to initialize CECILIA Assistant');
+        setResponseText('System initialization failed. Please refresh and try again.');
       }
     };
 
@@ -86,96 +106,126 @@ const ImmersiveAssistant: React.FC = () => {
   }, [assistantName, isMuted, hasSpokenWelcome]);
 
   const handleVoiceToggle = async () => {
+    if (!isInitialized) {
+      toast.error('Assistant is still initializing. Please wait...');
+      return;
+    }
+
     if (isListening) {
       try {
         setIsListening(false);
+        setResponseText('Processing your request...');
+        
         const transcript = await voiceService.stop();
-        if (transcript.trim()) {
+        if (transcript && transcript.trim()) {
           setIsSpeaking(true);
-          setResponseText('Processing your request...');
           
           const response = await assistantFeaturesService.processAdvancedCommand(transcript);
-          setResponseText(response.message || 'Task completed successfully.');
+          const responseMessage = response.message || 'Task completed successfully.';
+          
+          setResponseText(responseMessage);
           
           if (!isMuted) {
             try {
-              await voiceService.speakText(response.message || 'Task completed successfully.');
+              await voiceService.speakText(responseMessage);
             } catch (error) {
-              console.log('Voice synthesis not available');
+              console.log('Voice synthesis error:', error);
             }
           }
           
           setIsSpeaking(false);
+          toast.success('Command processed successfully');
+        } else {
+          setResponseText('I didn\'t catch that. Please try again.');
+          toast.info('No speech detected. Please try again.');
         }
       } catch (error) {
+        console.error('Error processing voice command:', error);
         setIsListening(false);
         setIsSpeaking(false);
+        setResponseText('Sorry, there was an error processing your command. Please try again.');
         toast.error('Error processing voice command');
       }
     } else {
       try {
+        if (!voiceService.isSupported()) {
+          toast.error('Voice recognition not supported in this browser');
+          return;
+        }
+        
         await voiceService.start();
         setIsListening(true);
-        setResponseText('I\'m listening. Speak your command...');
+        setResponseText('I\'m listening... Speak your command now.');
+        toast.info('Listening for your command...');
       } catch (error) {
-        toast.error('Failed to start voice recognition');
+        console.error('Failed to start voice recognition:', error);
+        toast.error('Failed to start voice recognition. Please check your microphone permissions.');
       }
     }
   };
 
   const toggleMute = () => {
-    setIsMuted(!isMuted);
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    
     if (voiceService.setMuted) {
-      voiceService.setMuted(!isMuted);
+      voiceService.setMuted(newMutedState);
     }
-    if (!isMuted) {
+    
+    if (newMutedState) {
+      // Stop any ongoing speech
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setIsSpeaking(false);
       toast.info('Voice responses muted');
     } else {
       toast.info('Voice responses unmuted');
     }
   };
 
-  const handleCanvasError = () => {
-    console.log('Canvas error detected, reloading...');
-    setCanvasKey(prev => prev + 1);
-  };
-
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-gray-900 via-blue-900 to-black relative overflow-hidden">
+    <div className="h-screen w-full bg-gradient-to-br from-gray-900 via-cyan-900 to-teal-900 relative overflow-hidden">
+      {/* Ambient background effects */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-cyan-400 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-teal-400 rounded-full blur-2xl animate-pulse delay-1000"></div>
+      </div>
+
       <div style={{ width: '100%', height: '100%' }}>
         <ThreeJSErrorBoundary>
           <Canvas 
-            key={canvasKey}
-            camera={{ position: [0, 0, 8], fov: 60 }}
-            onCreated={({ gl }) => {
-              gl.domElement.addEventListener('webglcontextlost', (event) => {
-                event.preventDefault();
-                console.log('WebGL context lost, preventing default and restarting...');
-                setTimeout(() => {
-                  handleCanvasError();
-                }, 100);
-              });
-              
-              gl.domElement.addEventListener('webglcontextrestored', () => {
-                console.log('WebGL context restored');
-              });
+            camera={{ position: [0, 0, 10], fov: 50 }}
+            gl={{ 
+              antialias: true,
+              alpha: true,
+              powerPreference: "high-performance"
             }}
           >
             <Suspense fallback={null}>
               <Environment preset="night" />
-              <ambientLight intensity={0.3} />
-              <pointLight position={[10, 10, 10]} intensity={1} />
+              <fog attach="fog" args={['#001122', 8, 20]} />
+              
               <AssistantSphere
                 isListening={isListening}
                 isSpeaking={isSpeaking}
                 responseText={responseText}
               />
-              <OrbitControls enableZoom={false} enablePan={false} />
+              
+              <OrbitControls 
+                enableZoom={true}
+                enablePan={false}
+                minDistance={5}
+                maxDistance={15}
+                autoRotate={!isListening && !isSpeaking}
+                autoRotateSpeed={0.5}
+              />
             </Suspense>
           </Canvas>
         </ThreeJSErrorBoundary>
       </div>
 
+      {/* UI Overlay */}
       <div className="absolute inset-0 pointer-events-none">
         <AssistantTopBar
           assistantName={assistantName}
