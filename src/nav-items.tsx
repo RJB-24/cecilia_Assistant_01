@@ -27,24 +27,16 @@ import Workflows from "./pages/Workflows";
 import SettingsPage from "./pages/Settings";
 
 export const navCategories = {
-  main: "Main",
-  tools: "Tools",
-  data: "Data & Analytics",
-  settings: "Settings"
+  main: "CECILIA Core",
+  intelligence: "AI Intelligence",
+  productivity: "Productivity Suite",
+  settings: "Configuration"
 };
 
 export const navItems = [
   {
-    title: "Dashboard",
+    title: "CECILIA Hub",
     to: "/",
-    icon: <HomeIcon className="h-4 w-4" />,
-    variant: "default" as const,
-    category: "main",
-    page: <Index />
-  },
-  {
-    title: "JARVIS AI",
-    to: "/jarvis",
     icon: <Bot className="h-4 w-4" />,
     variant: "default" as const,
     category: "main",
@@ -59,27 +51,27 @@ export const navItems = [
     page: <CommandCenter />
   },
   {
-    title: "AI Map",
-    to: "/map", 
-    icon: <MapPin className="h-4 w-4" />,
-    variant: "default" as const,
-    category: "tools",
-    page: <Map />
-  },
-  {
-    title: "Lab",
+    title: "AI Lab",
     to: "/lab",
     icon: <Zap className="h-4 w-4" />,
     variant: "default" as const,
-    category: "tools",
+    category: "intelligence",
     page: <Lab />
   },
   {
-    title: "Tasks",
+    title: "Smart Map",
+    to: "/map", 
+    icon: <MapPin className="h-4 w-4" />,
+    variant: "default" as const,
+    category: "intelligence",
+    page: <Map />
+  },
+  {
+    title: "Task Manager",
     to: "/tasks",
     icon: <Calendar className="h-4 w-4" />,
     variant: "default" as const,
-    category: "tools",
+    category: "productivity",
     page: <Tasks />
   },
   {
@@ -87,15 +79,15 @@ export const navItems = [
     to: "/messages",
     icon: <MessageSquare className="h-4 w-4" />,
     variant: "default" as const,
-    category: "tools",
+    category: "productivity",
     page: <Messages />
   },
   {
-    title: "Notes",
+    title: "Smart Notes",
     to: "/notes",
     icon: <FileText className="h-4 w-4" />,
     variant: "default" as const,
-    category: "data",
+    category: "productivity",
     page: <Notes />
   },
   {
@@ -103,7 +95,7 @@ export const navItems = [
     to: "/analytics",
     icon: <BarChart3 className="h-4 w-4" />,
     variant: "default" as const,
-    category: "data",
+    category: "intelligence",
     page: <Analytics />
   },
   {
@@ -111,7 +103,7 @@ export const navItems = [
     to: "/workflows",
     icon: <Workflow className="h-4 w-4" />,
     variant: "default" as const,
-    category: "tools",
+    category: "intelligence",
     page: <Workflows />
   },
   {

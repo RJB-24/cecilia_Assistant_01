@@ -21,12 +21,15 @@ const Sidebar: React.FC = () => {
   return (
     <aside className="bg-card border-r border-border w-64 flex flex-col">
       <div className="py-6 flex items-center justify-start px-6">
-        <div className="relative w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-          <span className="text-primary text-lg font-bold">G</span>
+        <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg">
+          <span className="text-white text-lg font-bold">C</span>
         </div>
-        <span className="ml-3 text-xl font-semibold tracking-wider text-primary">
-          GroqFlow
-        </span>
+        <div className="ml-3">
+          <span className="text-xl font-bold tracking-wider bg-gradient-to-r from-cyan-400 to-blue-600 bg-clip-text text-transparent">
+            CECILIA
+          </span>
+          <p className="text-xs text-muted-foreground">AI Assistant</p>
+        </div>
       </div>
       
       <nav className="flex-1 mt-6 px-3">
@@ -43,7 +46,7 @@ const Sidebar: React.FC = () => {
                     className={cn(
                       "flex items-center py-2 px-3 rounded-md transition-colors duration-200",
                       currentPath === item.to
-                        ? "bg-primary/10 text-primary border border-primary/20"
+                        ? "bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-400 border border-cyan-400/20"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
@@ -59,10 +62,10 @@ const Sidebar: React.FC = () => {
       
       <div className="p-4 mt-auto">
         <div className="text-xs text-muted-foreground">
-          GroqFlow AI Assistant
+          CECILIA AI Platform
         </div>
         <div className="text-xs text-muted-foreground/50">
-          v1.0.0
+          v2.0.0 - Enhanced Intelligence
         </div>
       </div>
     </aside>
