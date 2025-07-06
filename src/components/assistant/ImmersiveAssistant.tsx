@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
@@ -21,8 +20,8 @@ const ImmersiveAssistant: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasThreeJSError, setHasThreeJSError] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Get current time-based greeting
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -34,24 +33,23 @@ const ImmersiveAssistant: React.FC = () => {
     const initializeAssistant = async () => {
       try {
         console.log('Initializing CECILIA Assistant...');
+        setIsProcessing(true);
+        
         await assistantFeaturesService.initialize();
         
-        const greeting = `${getTimeBasedGreeting()}! I'm ${assistantName}, your advanced AI companion powered by Groq's Llama models.`;
+        const greeting = `${getTimeBasedGreeting()}! I'm ${assistantName}, your advanced AI companion powered by Meta Llama and Groq technology.`;
         setResponseText(greeting);
         setIsInitialized(true);
         
-        // Auto-hide welcome panel after 5 seconds
-        setTimeout(() => {
-          setShowWelcome(false);
-        }, 5000);
+        setTimeout(() => setShowWelcome(false), 8000);
         
-        // Speak welcome message if not muted
         if (!isMuted && !hasSpokenWelcome) {
           setHasSpokenWelcome(true);
           setTimeout(async () => {
             try {
               setIsSpeaking(true);
-              await voiceService.speakText(`${greeting} I'm ready to assist you with voice commands, task automation, and intelligent conversations. You can activate me by clicking the microphone button or simply start speaking. How may I help you today?`);
+              const welcomeMessage = `${greeting} I'm ready to assist you with intelligent conversations, task automation, data analysis, and much more. You can activate me by clicking the microphone button or simply start speaking. How may I help you today?`;
+              await voiceService.speakText(welcomeMessage);
               setIsSpeaking(false);
             } catch (error) {
               console.log('Voice synthesis not available, continuing without audio');
@@ -65,6 +63,8 @@ const ImmersiveAssistant: React.FC = () => {
         console.error('Error initializing assistant:', error);
         toast.error('Failed to initialize CECILIA Assistant');
         setResponseText('System initialization failed. Please refresh and try again.');
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -80,6 +80,7 @@ const ImmersiveAssistant: React.FC = () => {
     if (isListening) {
       try {
         setIsListening(false);
+        setIsProcessing(true);
         setResponseText('Processing your request with advanced AI models...');
         
         const transcript = await voiceService.stop();
@@ -100,17 +101,19 @@ const ImmersiveAssistant: React.FC = () => {
           }
           
           setIsSpeaking(false);
-          toast.success('Command processed successfully');
+          toast.success(response.success ? 'Command processed successfully' : 'Command completed with notes');
         } else {
           setResponseText('I didn\'t catch that. Please try again.');
           toast.info('No speech detected. Please try again.');
         }
       } catch (error) {
         console.error('Error processing voice command:', error);
-        setIsListening(false);
-        setIsSpeaking(false);
         setResponseText('Sorry, there was an error processing your command. Please try again.');
         toast.error('Error processing voice command');
+      } finally {
+        setIsListening(false);
+        setIsSpeaking(false);
+        setIsProcessing(false);
       }
     } else {
       try {
@@ -134,9 +137,7 @@ const ImmersiveAssistant: React.FC = () => {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
     
-    if (voiceService.setMuted) {
-      voiceService.setMuted(newMutedState);
-    }
+    voiceService.setMuted(newMutedState);
     
     if (newMutedState) {
       if ('speechSynthesis' in window) {
@@ -200,7 +201,7 @@ const ImmersiveAssistant: React.FC = () => {
             
             <AssistantSphere
               isListening={isListening}
-              isSpeaking={isSpeaking}
+              isSpeaking={isSpeaking || isProcessing}
               responseText=""
             />
             
@@ -209,19 +210,18 @@ const ImmersiveAssistant: React.FC = () => {
               enablePan={false}
               minDistance={5}
               maxDistance={15}
-              autoRotate={!isListening && !isSpeaking}
+              autoRotate={!isListening && !isSpeaking && !isProcessing}
               autoRotateSpeed={0.3}
             />
           </Suspense>
         </Canvas>
       </div>
 
-      {/* UI Overlay */}
       <div className="absolute inset-0 pointer-events-none">
         <AssistantTopBar
           assistantName={assistantName}
           isListening={isListening}
-          isSpeaking={isSpeaking}
+          isSpeaking={isSpeaking || isProcessing}
           isMuted={isMuted}
           onToggleMute={toggleMute}
         />
@@ -232,7 +232,6 @@ const ImmersiveAssistant: React.FC = () => {
           onVoiceToggle={handleVoiceToggle}
         />
 
-        {/* Welcome Panel - positioned below */}
         {showWelcome && (
           <AssistantWelcomePanel 
             onClose={() => setShowWelcome(false)}

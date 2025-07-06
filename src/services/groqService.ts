@@ -1,128 +1,118 @@
+
 import Groq from 'groq-sdk';
 
 export interface GroqServiceOptions {
+  model?: string;
   temperature?: number;
-  maxTokens?: number;
+  max_tokens?: number;
+  stream?: boolean;
+}
+
+export interface TTSOptions {
+  voice?: string;
   model?: string;
 }
 
-class GroqService {
+export class GroqService {
   private client: Groq | null = null;
-  private configured: boolean = false;
+  private apiKey: string | null = null;
+  private isConfigured = false;
 
   constructor() {
-    this.initializeClient();
+    this.initialize();
   }
 
-  private initializeClient() {
-    const apiKey = this.getApiKey();
-    if (apiKey) {
-      try {
-        this.client = new Groq({
-          apiKey: apiKey,
-          dangerouslyAllowBrowser: true
-        });
-        this.configured = true;
-        console.log('Groq client initialized successfully');
-      } catch (error) {
-        console.error('Error initializing Groq client:', error);
-        this.configured = false;
-      }
-    } else {
-      this.configured = false;
+  private initialize() {
+    const storedApiKey = localStorage.getItem('groq_api_key') || process.env.GROQ_API_KEY;
+    if (storedApiKey) {
+      this.setApiKey(storedApiKey);
     }
   }
 
-  private getApiKey(): string | null {
-    // Try localStorage first (for development)
-    const localKey = localStorage.getItem('VITE_GROQ_API_KEY');
-    if (localKey) return localKey;
-
-    // Fallback to environment variable
-    const envKey = import.meta.env.VITE_GROQ_API_KEY;
-    if (envKey) return envKey;
-
-    return null;
+  setApiKey(apiKey: string) {
+    this.apiKey = apiKey;
+    this.client = new Groq({
+      apiKey: apiKey,
+      dangerouslyAllowBrowser: true
+    });
+    this.isConfigured = true;
+    localStorage.setItem('groq_api_key', apiKey);
   }
 
-  public reconfigure() {
-    this.initializeClient();
+  clearApiKey() {
+    this.apiKey = null;
+    this.client = null;
+    this.isConfigured = false;
+    localStorage.removeItem('groq_api_key');
   }
 
-  public isConfigured(): boolean {
-    return this.configured && this.client !== null;
+  isReady(): boolean {
+    return this.isConfigured && this.client !== null;
   }
 
-  async processCommand(command: string, options: GroqServiceOptions = {}): Promise<string> {
-    if (!this.configured || !this.client) {
-      throw new Error('Groq API is not configured. Please add your API key in Settings.');
+  async processCommand(
+    message: string, 
+    options: GroqServiceOptions = {}
+  ): Promise<string> {
+    if (!this.isReady()) {
+      throw new Error('Groq service not configured. Please set API key.');
     }
 
     try {
-      const response = await this.client.chat.completions.create({
+      const completion = await this.client!.chat.completions.create({
         messages: [
           {
             role: "system",
-            content: "You are CECILIA, a helpful AI assistant. Provide concise, friendly responses. Avoid repeating yourself. Give practical, actionable answers."
+            content: "You are CECILIA, an advanced AI assistant. Be helpful, concise, and professional. Provide accurate information and assist with various tasks."
           },
           {
             role: "user",
-            content: command
+            content: message
           }
         ],
         model: options.model || "llama-3.3-70b-versatile",
         temperature: options.temperature || 0.7,
-        max_completion_tokens: options.maxTokens || 1024,
+        max_completion_tokens: options.max_tokens || 150,
+        stream: options.stream || false
       });
 
-      return response.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
+      return completion.choices[0]?.message?.content || "I'm here to help, but I couldn't generate a response. Please try again.";
     } catch (error) {
-      console.error('Groq API error:', error);
+      console.error('Groq API Error:', error);
       throw new Error('Failed to process command with Groq API');
     }
   }
 
-  async processAgentCommand(command: string, options: GroqServiceOptions = {}): Promise<string> {
-    if (!this.configured || !this.client) {
-      throw new Error('Groq API is not configured. Please add your API key in Settings.');
+  async transcribeAudio(audioFile: File): Promise<string> {
+    if (!this.isReady()) {
+      throw new Error('Groq service not configured. Please set API key.');
     }
 
     try {
-      const response = await this.client.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: "You are CECILIA, an advanced AI assistant with real-time capabilities. You can search the web, execute code, and help with various tasks. Provide helpful, concise responses and take action when appropriate."
-          },
-          {
-            role: "user",
-            content: command
-          }
-        ],
-        model: "compound-beta", // Use agent model for enhanced capabilities
-        temperature: options.temperature || 0.5,
-        max_completion_tokens: options.maxTokens || 1024,
+      const transcription = await this.client!.audio.transcriptions.create({
+        file: audioFile,
+        model: "whisper-large-v3-turbo",
+        language: "en",
+        response_format: "text"
       });
 
-      return response.choices[0]?.message?.content || "I'm sorry, I couldn't process that request.";
+      return transcription;
     } catch (error) {
-      console.error('Groq Agent API error:', error);
-      // Fallback to regular model if agent model fails
-      return this.processCommand(command, options);
+      console.error('Groq Transcription Error:', error);
+      throw new Error('Failed to transcribe audio');
     }
   }
 
-  async speakText(text: string, options: { voice?: string } = {}): Promise<void> {
-    if (!this.configured || !this.client) {
-      throw new Error('Groq API is not configured');
+  async speakText(text: string, options: TTSOptions = {}): Promise<void> {
+    if (!this.isReady()) {
+      throw new Error('Groq service not configured. Please set API key.');
     }
 
     try {
-      const response = await this.client.audio.speech.create({
-        model: "playai-tts",
+      const response = await this.client!.audio.speech.create({
+        model: options.model || "playai-tts",
         input: text,
-        voice: options.voice || "Celeste-PlayAI",
-        response_format: "wav"
+        voice: options.voice || "Celeste-PlayAI"
       });
 
       const audioBuffer = await response.arrayBuffer();
@@ -130,39 +120,54 @@ class GroqService {
       const audioUrl = URL.createObjectURL(audioBlob);
       
       const audio = new Audio(audioUrl);
-      await new Promise((resolve, reject) => {
-        audio.onended = resolve;
+      return new Promise((resolve, reject) => {
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          resolve();
+        };
         audio.onerror = reject;
         audio.play();
       });
-      
-      URL.revokeObjectURL(audioUrl);
     } catch (error) {
-      console.error('Text-to-speech error:', error);
-      throw error;
+      console.error('Groq TTS Error:', error);
+      throw new Error('Failed to synthesize speech');
     }
   }
 
-  async transcribeAudio(audioBlob: Blob): Promise<string> {
-    if (!this.configured || !this.client) {
-      throw new Error('Groq API is not configured');
+  async processWithAgent(message: string): Promise<string> {
+    if (!this.isReady()) {
+      throw new Error('Groq service not configured. Please set API key.');
     }
 
     try {
-      // Convert Blob to File to match Groq SDK requirements
-      const audioFile = new File([audioBlob], 'audio.wav', { type: 'audio/wav' });
-
-      const response = await this.client.audio.transcriptions.create({
-        file: audioFile,
-        model: 'whisper-large-v3',
-        language: 'en'
+      const completion = await this.client!.chat.completions.create({
+        messages: [
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        model: "compound-beta",
+        temperature: 0.5,
+        max_completion_tokens: 300
       });
 
-      return response.text || '';
+      return completion.choices[0]?.message?.content || "I couldn't process that request with agent capabilities.";
     } catch (error) {
-      console.error('Audio transcription error:', error);
-      throw error;
+      console.error('Groq Agent Error:', error);
+      throw new Error('Failed to process with agent capabilities');
     }
+  }
+
+  reconfigure() {
+    this.initialize();
+  }
+
+  getConfiguration() {
+    return {
+      isConfigured: this.isConfigured,
+      hasApiKey: !!this.apiKey
+    };
   }
 }
 

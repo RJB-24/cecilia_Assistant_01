@@ -1,3 +1,4 @@
+
 import { voiceCommandService } from './features/voiceCommandService';
 import { voicePersonalityService } from './features/voicePersonalityService';
 import { BaseVoiceService } from './baseVoiceService';
@@ -8,6 +9,7 @@ import { realtimeDataService } from '../realtimeDataService';
 export class VoiceService extends BaseVoiceService {
   private isMuted: boolean = false;
   private isCurrentlySpeaking: boolean = false;
+  private currentModel: string = 'llama-3.3-70b-versatile';
 
   constructor(options: VoiceServiceOptions = {}) {
     super(options);
@@ -18,7 +20,6 @@ export class VoiceService extends BaseVoiceService {
   }
 
   async processCommand(text: string): Promise<VoiceCommand> {
-    // Check for command repetition
     if (!this.shouldProcessCommand(text)) {
       return {
         text,
@@ -34,7 +35,6 @@ export class VoiceService extends BaseVoiceService {
       voicePersonalityService.updateLastInteraction();
       const command = await voiceCommandService.processCommand(text);
       
-      // Add intelligent response based on command
       await this.handleCommandResponse(command);
       
       return command;
@@ -53,51 +53,57 @@ export class VoiceService extends BaseVoiceService {
         case 'get_weather':
           try {
             const weather = await realtimeDataService.getCurrentWeather();
-            response = `Current weather in ${weather.location}: ${weather.temperature}°C, ${weather.condition}. Humidity is ${weather.humidity}%.`;
+            response = `Current weather: ${weather.temperature}°C, ${weather.condition}. Humidity ${weather.humidity}%.`;
           } catch (error) {
-            response = "I need a weather API key to get current weather information.";
+            response = "I need weather API configuration to get current conditions.";
           }
           break;
 
         case 'get_news':
           try {
-            const news = await realtimeDataService.getLatestNews('technology', 2);
-            response = `Latest tech news: ${news.map(n => n.title).slice(0, 2).join('. ')}`;
+            const news = await realtimeDataService.getLatestNews('general', 3);
+            response = `Latest headlines: ${news.map(n => n.title).slice(0, 2).join('. ')}`;
           } catch (error) {
-            response = "I need a news API key to get current headlines.";
+            response = "I need news API access to get current headlines.";
           }
           break;
 
         case 'send_email':
-          response = `I'll help you with email${command.entities.recipient ? ` to ${command.entities.recipient}` : ''}. What would you like to say?`;
+          response = `I'll help you compose an email${command.entities.recipient ? ` to ${command.entities.recipient}` : ''}. What would you like to say?`;
           break;
 
         case 'create_calendar_event':
-          response = "I'll help you schedule that. What's the meeting about?";
+          response = "I'll help you schedule that event. Please provide the details.";
           break;
 
         case 'take_notes':
-          response = `Starting note-taking${command.entities.title ? ` for ${command.entities.title}` : ''}. Go ahead, I'm listening.`;
+          response = `Starting note-taking session${command.entities.title ? ` for ${command.entities.title}` : ''}. Go ahead.`;
           break;
 
         case 'open_application':
-          response = `Opening ${command.entities.appName || 'the application'}.`;
+          response = `Opening ${command.entities.appName || 'the application'} now.`;
+          break;
+
+        case 'analyze_data':
+          response = "I'm ready to analyze your data. Please share the dataset or specify the analysis type.";
           break;
 
         default:
-          // Use Groq for conversational responses
           if (groqService.isConfigured()) {
             try {
-              response = await groqService.processCommand(command.text);
-              // Keep responses concise for voice
+              response = await groqService.processCommand(command.text, {
+                model: this.currentModel,
+                temperature: 0.7,
+                max_tokens: 150
+              });
               if (response.length > 200) {
                 response = response.substring(0, 200) + "...";
               }
             } catch (error) {
-              response = "I understand. How else can I help you?";
+              response = "I understand. How else can I assist you?";
             }
           } else {
-            response = "I understand. Please configure the Groq API key for full conversation capabilities.";
+            response = "Please configure the Groq API key in settings for full conversational capabilities.";
           }
       }
 
@@ -113,22 +119,20 @@ export class VoiceService extends BaseVoiceService {
     this.isCurrentlySpeaking = true;
     
     try {
-      // Try Groq TTS first if configured
       if (groqService.isConfigured()) {
         try {
           await groqService.speakText(text, {
-            voice: voiceCommandService.getVoice()
+            voice: voiceCommandService.getVoice(),
+            model: 'playai-tts'
           });
           return;
         } catch (error) {
-          console.error('Groq TTS error, falling back to browser:', error);
+          console.error('Groq TTS error, using browser TTS:', error);
         }
       }
       
-      // Fallback to browser TTS
       if ('speechSynthesis' in window) {
         return new Promise((resolve, reject) => {
-          // Cancel any ongoing speech
           window.speechSynthesis.cancel();
           
           const utterance = new SpeechSynthesisUtterance(text);
@@ -137,7 +141,6 @@ export class VoiceService extends BaseVoiceService {
           utterance.pitch = 1.1;
           utterance.volume = 0.8;
           
-          // Try to find a good voice
           const voices = window.speechSynthesis.getVoices();
           const preferredVoice = voices.find(voice => 
             voice.name.toLowerCase().includes('female') || 
@@ -169,6 +172,8 @@ export class VoiceService extends BaseVoiceService {
       this.isCurrentlySpeaking = false;
       console.error('Error speaking text:', error);
       throw error;
+    } finally {
+      this.isCurrentlySpeaking = false;
     }
   }
 
@@ -184,6 +189,7 @@ export class VoiceService extends BaseVoiceService {
     this.isMuted = muted;
     if (muted && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+      this.isCurrentlySpeaking = false;
     }
   }
 
@@ -191,7 +197,14 @@ export class VoiceService extends BaseVoiceService {
     return this.isMuted;
   }
 
-  // Additional method to refresh API configuration
+  setModel(model: string): void {
+    this.currentModel = model;
+  }
+
+  getCurrentModel(): string {
+    return this.currentModel;
+  }
+
   refreshConfiguration(): void {
     groqService.reconfigure();
   }
