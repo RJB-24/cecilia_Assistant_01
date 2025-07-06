@@ -24,7 +24,7 @@ import Messages from "./pages/Messages";
 import Notes from "./pages/Notes";
 import Analytics from "./pages/Analytics";
 import Workflows from "./pages/Workflows";
-import Settings from "./pages/Settings";
+import SettingsPage from "./pages/Settings";
 
 export const navCategories = {
   main: "Main",
@@ -120,6 +120,6 @@ export const navItems = [
     icon: <Settings className="h-4 w-4" />,
     variant: "default" as const,
     category: "settings",
-    page: <Settings />
+    page: <SettingsPage />
   },
 ];
