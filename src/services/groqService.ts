@@ -109,7 +109,7 @@ export class GroqService {
         response_format: "text"
       });
 
-      return transcription as string;
+      return String(transcription);
     } catch (error) {
       console.error('Groq Transcription Error:', error);
       throw new Error('Failed to transcribe audio');

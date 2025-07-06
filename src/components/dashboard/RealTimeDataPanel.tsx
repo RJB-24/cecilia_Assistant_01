@@ -15,14 +15,14 @@ import {
   AlertCircle,
   CheckCircle
 } from "lucide-react";
-import { realtimeDataService, NewsItem, WeatherData, CalendarEvent, EmailSummary } from "@/services/realtimeDataService";
+import { realtimeDataService, NewsItem, WeatherData, CalendarEvent, EmailSummary, StockData } from "@/services/realtimeDataService";
 
 const RealTimeDataPanel: React.FC = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [emailSummary, setEmailSummary] = useState<EmailSummary | null>(null);
-  const [stockPrices, setStockPrices] = useState<Record<string, number>>({});
+  const [stockPrices, setStockPrices] = useState<StockData[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [configStatus, setConfigStatus] = useState<Record<string, boolean>>({});
@@ -42,7 +42,7 @@ const RealTimeDataPanel: React.FC = () => {
       const [newsData, weatherData, eventsData, emailData, stockData] = await Promise.all([
         realtimeDataService.getLatestNews('technology', 3),
         realtimeDataService.getCurrentWeather(),
-        realtimeDataService.getUpcomingEvents(3),
+        realtimeDataService.getUpcomingEvents(),
         realtimeDataService.getEmailSummary(),
         realtimeDataService.getStockPrices(['AAPL', 'GOOGL', 'MSFT'])
       ]);
@@ -177,7 +177,7 @@ const RealTimeDataPanel: React.FC = () => {
                   <h4 className="text-xs font-medium mb-1">{event.title}</h4>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-jarvis-secondary">
-                      {formatTime(event.start)}
+                      {event.time}
                     </span>
                     {event.location && (
                       <span className="text-xs text-jarvis-secondary">{event.location}</span>
@@ -204,17 +204,17 @@ const RealTimeDataPanel: React.FC = () => {
           )}
 
           {/* Stock Prices */}
-          {Object.keys(stockPrices).length > 0 && (
+          {stockPrices.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <TrendingUp className="h-4 w-4 text-jarvis-blue" />
                 <span className="text-sm font-medium">Markets</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
-                {Object.entries(stockPrices).map(([symbol, price]) => (
-                  <div key={symbol} className="bg-jarvis-dark/40 rounded-lg p-2 border border-jarvis-border/30 text-center">
-                    <div className="text-xs font-medium">{symbol}</div>
-                    <div className="text-xs text-jarvis-secondary">${price.toFixed(2)}</div>
+                {stockPrices.map((stock) => (
+                  <div key={stock.symbol} className="bg-jarvis-dark/40 rounded-lg p-2 border border-jarvis-border/30 text-center">
+                    <div className="text-xs font-medium">{stock.symbol}</div>
+                    <div className="text-xs text-jarvis-secondary">${stock.price}</div>
                   </div>
                 ))}
               </div>

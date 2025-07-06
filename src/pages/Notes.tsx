@@ -5,15 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Calendar, FileText, Trash2, Video } from "lucide-react";
 import { toast } from "sonner";
-import { noteService, Note as NoteType } from "@/services/noteService";
+import { noteService, GeneratedNote } from "@/services/noteService";
 
 const Notes: React.FC = () => {
-  const [notes, setNotes] = useState<NoteType[]>([]);
-  const [selectedNote, setSelectedNote] = useState<NoteType | null>(null);
+  const [notes, setNotes] = useState<GeneratedNote[]>([]);
+  const [selectedNote, setSelectedNote] = useState<GeneratedNote | null>(null);
 
   useEffect(() => {
-    // Load notes from storage when component mounts
-    noteService.loadNotesFromStorage();
+    // Load notes when component mounts
     setNotes(noteService.getAllNotes());
   }, []);
 
@@ -62,7 +61,7 @@ const Notes: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
-                            {note.source === "meeting" ? (
+                            {note.source === "audio" ? (
                               <Calendar className="w-4 h-4 text-jarvis-secondary mr-2" />
                             ) : (
                               <Video className="w-4 h-4 text-jarvis-secondary mr-2" />
@@ -106,7 +105,7 @@ const Notes: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="text-xl font-bold jarvis-glow-text">{selectedNote.title}</CardTitle>
                   <CardDescription className="text-jarvis-secondary">
-                    {selectedNote.source === "meeting" ? "Meeting notes" : "Video notes"} • 
+                    {selectedNote.format} notes • 
                     {new Date(selectedNote.createdAt).toLocaleString()}
                   </CardDescription>
                 </CardHeader>
@@ -115,18 +114,11 @@ const Notes: React.FC = () => {
                     {selectedNote.content}
                   </div>
                   
-                  {selectedNote.tags && selectedNote.tags.length > 0 && (
+                  {selectedNote.metadata && (
                     <div className="mt-4">
-                      <h3 className="text-sm font-medium text-jarvis-light mb-2">Tags</h3>
-                      <div className="flex gap-2 flex-wrap">
-                        {selectedNote.tags.map((tag, index) => (
-                          <span 
-                            key={index}
-                            className="px-2 py-1 text-xs rounded-full bg-jarvis-blue/20 border border-jarvis-blue/30 text-jarvis-light"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+                      <h3 className="text-sm font-medium text-jarvis-light mb-2">Source</h3>
+                      <div className="text-xs text-jarvis-secondary">
+                        {selectedNote.source} • {selectedNote.format}
                       </div>
                     </div>
                   )}

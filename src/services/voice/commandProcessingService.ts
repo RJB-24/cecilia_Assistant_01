@@ -9,7 +9,7 @@ export class VoiceCommandProcessingService {
   async processVoiceCommand(text: string): Promise<VoiceCommand> {
     try {
       let intent = 'unknown';
-      const entities: Record<string, any> = {};
+      let entities: Record<string, any> = {};
       let confidence = 0.8;
 
       if (groqService.isConfigured()) {
@@ -48,7 +48,7 @@ export class VoiceCommandProcessingService {
     confidence: number;
   }> {
     let intent = 'unknown';
-    const entities: Record<string, any> = {};
+    let entities: Record<string, any> = {};
     let confidence = 0.9;
 
     const lowerResponse = response.toLowerCase();
@@ -85,7 +85,7 @@ export class VoiceCommandProcessingService {
   private fallbackIntentDetection(text: string): { intent: string; entities: Record<string, any> } {
     const lowerText = text.toLowerCase();
     let intent = 'unknown';
-    const entities: Record<string, any> = {};
+    let entities: Record<string, any> = {};
 
     if (lowerText.includes('email') || lowerText.includes('send')) {
       intent = 'send_email';
