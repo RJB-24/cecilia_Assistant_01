@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
@@ -7,6 +8,7 @@ import { toast } from 'sonner';
 import AssistantSphere from './AssistantSphere';
 import AssistantTopBar from './AssistantTopBar';
 import AssistantBottomControls from './AssistantBottomControls';
+import AssistantWelcomePanel from './AssistantWelcomePanel';
 import ErrorFallback from '@/components/common/ErrorFallback';
 
 const ImmersiveAssistant: React.FC = () => {
@@ -18,6 +20,7 @@ const ImmersiveAssistant: React.FC = () => {
   const [hasSpokenWelcome, setHasSpokenWelcome] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasThreeJSError, setHasThreeJSError] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   // Get current time-based greeting
   const getTimeBasedGreeting = () => {
@@ -33,9 +36,14 @@ const ImmersiveAssistant: React.FC = () => {
         console.log('Initializing CECILIA Assistant...');
         await assistantFeaturesService.initialize();
         
-        const greeting = `${getTimeBasedGreeting()}! I'm ${assistantName}, your advanced AI companion. I'm ready to assist you with anything you need.`;
+        const greeting = `${getTimeBasedGreeting()}! I'm ${assistantName}, your advanced AI companion powered by Groq's Llama models.`;
         setResponseText(greeting);
         setIsInitialized(true);
+        
+        // Auto-hide welcome panel after 5 seconds
+        setTimeout(() => {
+          setShowWelcome(false);
+        }, 5000);
         
         // Speak welcome message if not muted
         if (!isMuted && !hasSpokenWelcome) {
@@ -43,7 +51,7 @@ const ImmersiveAssistant: React.FC = () => {
           setTimeout(async () => {
             try {
               setIsSpeaking(true);
-              await voiceService.speakText(`${greeting} You can activate me by clicking the microphone button or simply start speaking. How may I help you today?`);
+              await voiceService.speakText(`${greeting} I'm ready to assist you with voice commands, task automation, and intelligent conversations. You can activate me by clicking the microphone button or simply start speaking. How may I help you today?`);
               setIsSpeaking(false);
             } catch (error) {
               console.log('Voice synthesis not available, continuing without audio');
@@ -72,7 +80,7 @@ const ImmersiveAssistant: React.FC = () => {
     if (isListening) {
       try {
         setIsListening(false);
-        setResponseText('Processing your request...');
+        setResponseText('Processing your request with advanced AI models...');
         
         const transcript = await voiceService.stop();
         if (transcript && transcript.trim()) {
@@ -152,10 +160,25 @@ const ImmersiveAssistant: React.FC = () => {
 
   return (
     <div className="h-screen w-full bg-gradient-to-br from-gray-900 via-cyan-900 to-teal-900 relative overflow-hidden">
-      {/* Ambient background effects */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-cyan-400 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-teal-400 rounded-full blur-2xl animate-pulse delay-1000"></div>
+      {/* Enhanced ambient background effects */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-400 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-teal-400 rounded-full blur-2xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-blue-400 rounded-full blur-xl animate-pulse delay-500 transform -translate-x-1/2 -translate-y-1/2"></div>
+      </div>
+
+      {/* Neural network background pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <svg className="w-full h-full" viewBox="0 0 1000 1000">
+          <defs>
+            <pattern id="neural-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+              <circle cx="50" cy="50" r="2" fill="cyan" opacity="0.3"/>
+              <line x1="0" y1="50" x2="100" y2="50" stroke="cyan" strokeWidth="0.5" opacity="0.2"/>
+              <line x1="50" y1="0" x2="50" y2="100" stroke="cyan" strokeWidth="0.5" opacity="0.2"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#neural-pattern)"/>
+        </svg>
       </div>
 
       <div style={{ width: '100%', height: '100%' }}>
@@ -178,7 +201,7 @@ const ImmersiveAssistant: React.FC = () => {
             <AssistantSphere
               isListening={isListening}
               isSpeaking={isSpeaking}
-              responseText={responseText}
+              responseText=""
             />
             
             <OrbitControls 
@@ -187,7 +210,7 @@ const ImmersiveAssistant: React.FC = () => {
               minDistance={5}
               maxDistance={15}
               autoRotate={!isListening && !isSpeaking}
-              autoRotateSpeed={0.5}
+              autoRotateSpeed={0.3}
             />
           </Suspense>
         </Canvas>
@@ -208,6 +231,14 @@ const ImmersiveAssistant: React.FC = () => {
           responseText={responseText}
           onVoiceToggle={handleVoiceToggle}
         />
+
+        {/* Welcome Panel - positioned below */}
+        {showWelcome && (
+          <AssistantWelcomePanel 
+            onClose={() => setShowWelcome(false)}
+            isInitialized={isInitialized}
+          />
+        )}
       </div>
     </div>
   );
