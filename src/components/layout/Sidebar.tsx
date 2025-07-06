@@ -22,10 +22,10 @@ const Sidebar: React.FC = () => {
     <aside className="bg-card border-r border-border w-64 flex flex-col">
       <div className="py-6 flex items-center justify-start px-6">
         <div className="relative w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-          <span className="text-primary text-lg font-bold">L</span>
+          <span className="text-primary text-lg font-bold">G</span>
         </div>
         <span className="ml-3 text-xl font-semibold tracking-wider text-primary">
-          LifeOS
+          GroqFlow
         </span>
       </div>
       
@@ -59,7 +59,7 @@ const Sidebar: React.FC = () => {
       
       <div className="p-4 mt-auto">
         <div className="text-xs text-muted-foreground">
-          LifeOS AI Assistant
+          GroqFlow AI Assistant
         </div>
         <div className="text-xs text-muted-foreground/50">
           v1.0.0
