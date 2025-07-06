@@ -11,33 +11,41 @@ import "./styles/jarvis.css";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <ErrorBoundary>
-          <BrowserRouter>
-            <MainLayout>
-              <Routes>
-                {navItems.map(({ to, page }) => (
-                  <Route 
-                    key={to} 
-                    path={to} 
-                    element={
-                      <ErrorBoundary>
-                        {page}
-                      </ErrorBoundary>
-                    } 
-                  />
-                ))}
-              </Routes>
-            </MainLayout>
-          </BrowserRouter>
-        </ErrorBoundary>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
-);
+const App = () => {
+  console.log('App component rendering');
+  console.log('Navigation items:', navItems);
+  
+  return (
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <ErrorBoundary>
+            <BrowserRouter>
+              <MainLayout>
+                <Routes>
+                  {navItems.map(({ to, page }) => {
+                    console.log('Registering route:', to);
+                    return (
+                      <Route 
+                        key={to} 
+                        path={to} 
+                        element={
+                          <ErrorBoundary>
+                            {page}
+                          </ErrorBoundary>
+                        } 
+                      />
+                    );
+                  })}
+                </Routes>
+              </MainLayout>
+            </BrowserRouter>
+          </ErrorBoundary>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  );
+};
 
 export default App;

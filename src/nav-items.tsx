@@ -40,7 +40,7 @@ export const navItems = [
     icon: <Bot className="h-4 w-4" />,
     variant: "default" as const,
     category: "main",
-    page: <JarvisLab />
+    page: <Index />
   },
   {
     title: "Command Center",
