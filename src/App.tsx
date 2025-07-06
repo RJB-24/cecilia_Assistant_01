@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { navItems } from "./nav-items";
 import MainLayout from "./components/layout/MainLayout";
+import ErrorBoundary from "./components/common/ErrorBoundary";
 import "./styles/jarvis.css";
 
 const queryClient = new QueryClient();
@@ -15,15 +16,25 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <BrowserRouter>
-          <MainLayout>
-            <Routes>
-              {navItems.map(({ to, page }) => (
-                <Route key={to} path={to} element={page} />
-              ))}
-            </Routes>
-          </MainLayout>
-        </BrowserRouter>
+        <ErrorBoundary>
+          <BrowserRouter>
+            <MainLayout>
+              <Routes>
+                {navItems.map(({ to, page }) => (
+                  <Route 
+                    key={to} 
+                    path={to} 
+                    element={
+                      <ErrorBoundary>
+                        {page}
+                      </ErrorBoundary>
+                    } 
+                  />
+                ))}
+              </Routes>
+            </MainLayout>
+          </BrowserRouter>
+        </ErrorBoundary>
       </TooltipProvider>
     </QueryClientProvider>
   </HelmetProvider>

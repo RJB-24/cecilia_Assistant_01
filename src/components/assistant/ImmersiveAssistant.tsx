@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment } from '@react-three/drei';
@@ -8,49 +7,7 @@ import { toast } from 'sonner';
 import AssistantSphere from './AssistantSphere';
 import AssistantTopBar from './AssistantTopBar';
 import AssistantBottomControls from './AssistantBottomControls';
-
-// Error boundary component for Three.js
-interface ErrorBoundaryState {
-  hasError: boolean;
-}
-
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-}
-
-class ThreeJSErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    console.error('ThreeJS Error:', error);
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Three.js error caught:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-900 via-blue-900 to-black">
-          <div className="text-white text-center">
-            <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gradient-to-r from-cyan-400 to-teal-400 flex items-center justify-center animate-pulse">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 animate-ping"></div>
-            </div>
-            <p className="text-lg font-semibold">CECILIA is Active</p>
-            <p className="text-sm text-gray-300 mt-2">Advanced AI Assistant Ready</p>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+import ErrorFallback from '@/components/common/ErrorFallback';
 
 const ImmersiveAssistant: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
@@ -60,6 +17,7 @@ const ImmersiveAssistant: React.FC = () => {
   const [assistantName] = useState('CECILIA');
   const [hasSpokenWelcome, setHasSpokenWelcome] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasThreeJSError, setHasThreeJSError] = useState(false);
 
   // Get current time-based greeting
   const getTimeBasedGreeting = () => {
@@ -173,7 +131,6 @@ const ImmersiveAssistant: React.FC = () => {
     }
     
     if (newMutedState) {
-      // Stop any ongoing speech
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
@@ -184,6 +141,15 @@ const ImmersiveAssistant: React.FC = () => {
     }
   };
 
+  if (hasThreeJSError) {
+    return (
+      <ErrorFallback 
+        title="CECILIA AI"
+        message="Advanced AI Assistant Ready"
+      />
+    );
+  }
+
   return (
     <div className="h-screen w-full bg-gradient-to-br from-gray-900 via-cyan-900 to-teal-900 relative overflow-hidden">
       {/* Ambient background effects */}
@@ -193,36 +159,38 @@ const ImmersiveAssistant: React.FC = () => {
       </div>
 
       <div style={{ width: '100%', height: '100%' }}>
-        <ThreeJSErrorBoundary>
-          <Canvas 
-            camera={{ position: [0, 0, 10], fov: 50 }}
-            gl={{ 
-              antialias: true,
-              alpha: true,
-              powerPreference: "high-performance"
-            }}
-          >
-            <Suspense fallback={null}>
-              <Environment preset="night" />
-              <fog attach="fog" args={['#001122', 8, 20]} />
-              
-              <AssistantSphere
-                isListening={isListening}
-                isSpeaking={isSpeaking}
-                responseText={responseText}
-              />
-              
-              <OrbitControls 
-                enableZoom={true}
-                enablePan={false}
-                minDistance={5}
-                maxDistance={15}
-                autoRotate={!isListening && !isSpeaking}
-                autoRotateSpeed={0.5}
-              />
-            </Suspense>
-          </Canvas>
-        </ThreeJSErrorBoundary>
+        <Canvas 
+          camera={{ position: [0, 0, 10], fov: 50 }}
+          gl={{ 
+            antialias: true,
+            alpha: true,
+            powerPreference: "high-performance"
+          }}
+          onError={(error) => {
+            console.error('Three.js Canvas Error:', error);
+            setHasThreeJSError(true);
+          }}
+        >
+          <Suspense fallback={null}>
+            <Environment preset="night" />
+            <fog attach="fog" args={['#001122', 8, 20]} />
+            
+            <AssistantSphere
+              isListening={isListening}
+              isSpeaking={isSpeaking}
+              responseText={responseText}
+            />
+            
+            <OrbitControls 
+              enableZoom={true}
+              enablePan={false}
+              minDistance={5}
+              maxDistance={15}
+              autoRotate={!isListening && !isSpeaking}
+              autoRotateSpeed={0.5}
+            />
+          </Suspense>
+        </Canvas>
       </div>
 
       {/* UI Overlay */}
