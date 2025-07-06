@@ -1,150 +1,83 @@
 
-import { 
-  Home, 
-  Brain, 
-  Settings, 
-  BarChart3, 
-  Bell, 
-  FileText, 
-  Workflow,
-  Heart,
-  Smartphone,
-  GraduationCap,
-  MessageCircle,
+import {
+  HomeIcon,
+  Settings,
+  MessageSquare,
   Calendar,
-  Shield,
-  User,
-  Zap
+  FileText,
+  BarChart3,
+  Workflow,
+  Zap,
+  Brain,
+  MapPin,
+  Bot
 } from "lucide-react";
-import Index from "./pages/Index";
-import CommandCenter from "./pages/CommandCenter";
-import Analytics from "./pages/Analytics";
-import Notifications from "./pages/Notifications";
-import Notes from "./pages/Notes";
-import Tasks from "./pages/Tasks";
-import Workflows from "./pages/Workflows";
-import Lab from "./pages/Lab";
-import Health from "./pages/Health";
-import SmartHome from "./pages/SmartHome";
-import Learning from "./pages/Learning";
-import Messages from "./pages/Messages";
-import Entertainment from "./pages/Entertainment";
-import Privacy from "./pages/Privacy";
-import Profile from "./pages/Profile";
 
 export const navItems = [
   {
     title: "Dashboard",
     to: "/",
-    icon: <Home className="h-4 w-4" />,
-    page: <Index />,
-    category: "main"
+    icon: <HomeIcon className="h-4 w-4" />,
+    variant: "default" as const,
   },
   {
-    title: "AI Assistant",
+    title: "JARVIS AI",
+    to: "/jarvis",
+    icon: <Bot className="h-4 w-4" />,
+    variant: "default" as const,
+  },
+  {
+    title: "Command Center",
     to: "/command-center",
     icon: <Brain className="h-4 w-4" />,
-    page: <CommandCenter />,
-    category: "main"
+    variant: "default" as const,
+  },
+  {
+    title: "AI Map",
+    to: "/map", 
+    icon: <MapPin className="h-4 w-4" />,
+    variant: "default" as const,
+  },
+  {
+    title: "Lab",
+    to: "/lab",
+    icon: <Zap className="h-4 w-4" />,
+    variant: "default" as const,
   },
   {
     title: "Tasks",
     to: "/tasks",
     icon: <Calendar className="h-4 w-4" />,
-    page: <Tasks />,
-    category: "productivity"
-  },
-  {
-    title: "Health & Wellness",
-    to: "/health",
-    icon: <Heart className="h-4 w-4" />,
-    page: <Health />,
-    category: "lifestyle"
-  },
-  {
-    title: "Smart Home",
-    to: "/smart-home",
-    icon: <Smartphone className="h-4 w-4" />,
-    page: <SmartHome />,
-    category: "lifestyle"
-  },
-  {
-    title: "Learning",
-    to: "/learning",
-    icon: <GraduationCap className="h-4 w-4" />,
-    page: <Learning />,
-    category: "productivity"
+    variant: "default" as const,
   },
   {
     title: "Messages",
     to: "/messages",
-    icon: <MessageCircle className="h-4 w-4" />,
-    page: <Messages />,
-    category: "communication"
-  },
-  {
-    title: "Entertainment",
-    to: "/entertainment",
-    icon: <Zap className="h-4 w-4" />,
-    page: <Entertainment />,
-    category: "lifestyle"
-  },
-  {
-    title: "Analytics",
-    to: "/analytics",
-    icon: <BarChart3 className="h-4 w-4" />,
-    page: <Analytics />,
-    category: "insights"
-  },
-  {
-    title: "Workflows",
-    to: "/workflows",
-    icon: <Workflow className="h-4 w-4" />,
-    page: <Workflows />,
-    category: "productivity"
+    icon: <MessageSquare className="h-4 w-4" />,
+    variant: "default" as const,
   },
   {
     title: "Notes",
     to: "/notes",
     icon: <FileText className="h-4 w-4" />,
-    page: <Notes />,
-    category: "productivity"
+    variant: "default" as const,
   },
   {
-    title: "Notifications",
-    to: "/notifications",
-    icon: <Bell className="h-4 w-4" />,
-    page: <Notifications />,
-    category: "system"
+    title: "Analytics",
+    to: "/analytics",
+    icon: <BarChart3 className="h-4 w-4" />,
+    variant: "default" as const,
   },
   {
-    title: "Privacy & Security",
-    to: "/privacy",
-    icon: <Shield className="h-4 w-4" />,
-    page: <Privacy />,
-    category: "system"
-  },
-  {
-    title: "Profile",
-    to: "/profile",
-    icon: <User className="h-4 w-4" />,
-    page: <Profile />,
-    category: "system"
+    title: "Workflows",
+    to: "/workflows",
+    icon: <Workflow className="h-4 w-4" />,
+    variant: "default" as const,
   },
   {
     title: "Settings",
     to: "/settings",
     icon: <Settings className="h-4 w-4" />,
-    page: <Lab />,
-    category: "system"
+    variant: "default" as const,
   },
 ];
-
-export const navCategories = {
-  main: "Main",
-  productivity: "Productivity",
-  lifestyle: "Lifestyle", 
-  communication: "Communication",
-  insights: "Insights",
-  system: "System"
-};
