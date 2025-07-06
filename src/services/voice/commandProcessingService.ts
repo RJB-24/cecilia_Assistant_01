@@ -2,108 +2,133 @@
 import { groqService } from '../groqService';
 import { VoiceCommand } from './types';
 
-export class CommandProcessingService {
-  /**
-   * Process voice command using Groq's NLP capabilities
-   */
-  async processCommand(text: string): Promise<VoiceCommand> {
+export class VoiceCommandProcessingService {
+  private commandHistory: VoiceCommand[] = [];
+  private maxHistorySize = 50;
+
+  async processVoiceCommand(text: string): Promise<VoiceCommand> {
     try {
       let intent = 'unknown';
       const entities: Record<string, any> = {};
-      
+      let confidence = 0.8;
+
       if (groqService.isConfigured()) {
-        const response = await groqService.processCommand(text);
-        return this.parseGroqResponse(response, text);
+        const response = await groqService.processCommand(
+          `Analyze this voice command and extract intent and entities: "${text}"`
+        );
+        
+        ({ intent, entities, confidence } = await this.parseAIResponse(response, text));
       } else {
-        return this.fallbackProcessing(text);
+        ({ intent, entities } = this.fallbackIntentDetection(text));
       }
+
+      const command: VoiceCommand = {
+        text,
+        confidence,
+        intent,
+        entities
+      };
+
+      this.addToHistory(command);
+      return command;
     } catch (error) {
       console.error('Error processing voice command:', error);
       return {
         text,
-        confidence: 0.5,
+        confidence: 0.3,
         intent: 'unknown',
         entities: {}
       };
     }
   }
 
-  private parseGroqResponse(response: string, originalText: string): VoiceCommand {
+  private async parseAIResponse(response: string, originalText: string): Promise<{
+    intent: string;
+    entities: Record<string, any>;
+    confidence: number;
+  }> {
     let intent = 'unknown';
     const entities: Record<string, any> = {};
+    let confidence = 0.9;
 
-    if (response.toLowerCase().includes('email')) {
+    const lowerResponse = response.toLowerCase();
+    
+    if (lowerResponse.includes('email') || lowerResponse.includes('send message')) {
       intent = 'send_email';
-      const matches = response.match(/to\s+([a-zA-Z\s]+)/i);
-      if (matches && matches[1]) {
-        entities.recipient = matches[1].trim();
-      }
-    } else if (response.toLowerCase().includes('schedule')) {
+      const recipientMatch = response.match(/to:?\s*([a-zA-Z0-9@.\s]+)/i);
+      if (recipientMatch) entities.recipient = recipientMatch[1].trim();
+    } else if (lowerResponse.includes('calendar') || lowerResponse.includes('schedule')) {
       intent = 'create_calendar_event';
-    } else if (response.toLowerCase().includes('analyze')) {
-      intent = 'analyze_data';
-    } else if (response.toLowerCase().includes('note') || response.toLowerCase().includes('transcribe')) {
+      const dateMatch = response.match(/date:?\s*([^,\n]+)/i);
+      if (dateMatch) entities.date = dateMatch[1].trim();
+    } else if (lowerResponse.includes('weather')) {
+      intent = 'get_weather';
+      const locationMatch = response.match(/location:?\s*([^,\n]+)/i);
+      if (locationMatch) entities.location = locationMatch[1].trim();
+    } else if (lowerResponse.includes('news')) {
+      intent = 'get_news';
+      const categoryMatch = response.match(/category:?\s*([^,\n]+)/i);
+      if (categoryMatch) entities.category = categoryMatch[1].trim();
+    } else if (lowerResponse.includes('note') || lowerResponse.includes('transcribe')) {
       intent = 'take_notes';
-      const titleMatches = response.match(/for\s+([a-zA-Z0-9\s]+)/i);
-      if (titleMatches && titleMatches[1]) {
-        entities.title = titleMatches[1].trim();
-      }
-    } else if (response.toLowerCase().includes('open') || response.toLowerCase().includes('launch') || response.toLowerCase().includes('start')) {
+      const titleMatch = response.match(/title:?\s*([^,\n]+)/i);
+      if (titleMatch) entities.title = titleMatch[1].trim();
+    } else if (lowerResponse.includes('open') || lowerResponse.includes('launch')) {
       intent = 'open_application';
-      const appMatches = response.match(/open\s+([a-zA-Z0-9\s]+)/i);
-      if (appMatches && appMatches[1]) {
-        entities.appName = appMatches[1].trim();
-      }
+      const appMatch = response.match(/app:?\s*([^,\n]+)/i);
+      if (appMatch) entities.appName = appMatch[1].trim();
     }
 
-    return {
-      text: originalText,
-      confidence: 0.95,
-      intent,
-      entities
-    };
+    return { intent, entities, confidence };
   }
 
-  private fallbackProcessing(text: string): VoiceCommand {
+  private fallbackIntentDetection(text: string): { intent: string; entities: Record<string, any> } {
+    const lowerText = text.toLowerCase();
     let intent = 'unknown';
     const entities: Record<string, any> = {};
-    
-    if (text.toLowerCase().includes('email') || text.toLowerCase().includes('send')) {
+
+    if (lowerText.includes('email') || lowerText.includes('send')) {
       intent = 'send_email';
-      const matches = text.match(/to\s+([a-zA-Z\s]+)/i);
-      if (matches && matches[1]) {
-        entities.recipient = matches[1].trim();
-      }
-    } else if (text.toLowerCase().includes('schedule') || text.toLowerCase().includes('calendar')) {
+      const emailMatch = text.match(/to\s+([a-zA-Z0-9@.\s]+)/i);
+      if (emailMatch) entities.recipient = emailMatch[1].trim();
+    } else if (lowerText.includes('weather')) {
+      intent = 'get_weather';
+      const locationMatch = text.match(/in\s+([a-zA-Z\s]+)/i);
+      if (locationMatch) entities.location = locationMatch[1].trim();
+    } else if (lowerText.includes('news')) {
+      intent = 'get_news';
+    } else if (lowerText.includes('schedule') || lowerText.includes('calendar')) {
       intent = 'create_calendar_event';
-      const dateMatches = text.match(/on\s+([a-zA-Z0-9\s,]+)/i);
-      if (dateMatches && dateMatches[1]) {
-        entities.date = dateMatches[1].trim();
-      }
-    } else if (text.toLowerCase().includes('analyze') || text.toLowerCase().includes('data')) {
-      intent = 'analyze_data';
-    } else if (text.toLowerCase().includes('note') || text.toLowerCase().includes('transcribe')) {
+    } else if (lowerText.includes('note') || lowerText.includes('remember')) {
       intent = 'take_notes';
-      const titleMatches = text.match(/for\s+([a-zA-Z0-9\s]+)/i);
-      if (titleMatches && titleMatches[1]) {
-        entities.title = titleMatches[1].trim();
-      }
-    } else if (text.toLowerCase().includes('open') || text.toLowerCase().includes('launch')) {
+    } else if (lowerText.includes('open') || lowerText.includes('launch')) {
       intent = 'open_application';
-      const appMatches = text.match(/open\s+([a-zA-Z0-9\s]+)/i);
-      if (appMatches && appMatches[1]) {
-        entities.appName = appMatches[1].trim();
-      }
+      const appMatch = text.match(/open\s+([a-zA-Z0-9\s]+)/i);
+      if (appMatch) entities.appName = appMatch[1].trim();
     }
 
-    return {
-      text,
-      confidence: 0.8,
-      intent,
-      entities
-    };
+    return { intent, entities };
+  }
+
+  private addToHistory(command: VoiceCommand): void {
+    this.commandHistory.unshift(command);
+    if (this.commandHistory.length > this.maxHistorySize) {
+      this.commandHistory = this.commandHistory.slice(0, this.maxHistorySize);
+    }
+  }
+
+  getCommandHistory(): VoiceCommand[] {
+    return [...this.commandHistory];
+  }
+
+  clearHistory(): void {
+    this.commandHistory = [];
+  }
+
+  getLastCommand(): VoiceCommand | null {
+    return this.commandHistory[0] || null;
   }
 }
 
-export const commandProcessingService = new CommandProcessingService();
-export default commandProcessingService;
+export const voiceCommandProcessingService = new VoiceCommandProcessingService();
+export default voiceCommandProcessingService;

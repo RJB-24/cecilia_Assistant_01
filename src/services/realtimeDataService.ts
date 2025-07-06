@@ -17,6 +17,33 @@ export interface NewsArticle {
   imageUrl?: string;
 }
 
+export interface NewsItem extends NewsArticle {}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location?: string;
+  attendees?: string[];
+}
+
+export interface EmailSummary {
+  unreadCount: number;
+  importantEmails: Array<{
+    from: string;
+    subject: string;
+    preview: string;
+  }>;
+}
+
+export interface StockData {
+  symbol: string;
+  price: string;
+  change: string;
+  changePercent: string;
+}
+
 export class RealtimeDataService {
   private weatherApiKey: string | null = null;
   private newsApiKey: string | null = null;
@@ -38,7 +65,6 @@ export class RealtimeDataService {
 
   async getCurrentWeather(location: string = 'auto'): Promise<WeatherData> {
     if (!this.weatherApiKey) {
-      // Return mock data when API key is not configured
       return {
         location: 'Demo Location',
         temperature: 22,
@@ -53,7 +79,6 @@ export class RealtimeDataService {
       let weatherUrl: string;
       
       if (location === 'auto') {
-        // Get user's location first
         const position = await this.getCurrentPosition();
         weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${position.coords.latitude}&lon=${position.coords.longitude}&appid=${this.weatherApiKey}&units=metric`;
       } else {
@@ -72,7 +97,7 @@ export class RealtimeDataService {
         temperature: Math.round(data.main.temp),
         condition: data.weather[0].description,
         humidity: data.main.humidity,
-        windSpeed: Math.round(data.wind.speed * 3.6), // Convert m/s to km/h
+        windSpeed: Math.round(data.wind.speed * 3.6),
         icon: data.weather[0].icon
       };
     } catch (error) {
@@ -97,7 +122,6 @@ export class RealtimeDataService {
 
   async getLatestNews(category: string = 'general', limit: number = 10): Promise<NewsArticle[]> {
     if (!this.newsApiKey) {
-      // Return mock data when API key is not configured
       return [
         {
           title: 'Demo News Article 1',
@@ -140,8 +164,41 @@ export class RealtimeDataService {
     }
   }
 
-  async getStockPrice(symbol: string): Promise<any> {
-    // Mock implementation - would need a real stock API
+  async getUpcomingEvents(): Promise<CalendarEvent[]> {
+    // Mock implementation
+    return [
+      {
+        id: '1',
+        title: 'Team Meeting',
+        date: '2024-01-15',
+        time: '10:00 AM',
+        location: 'Conference Room A'
+      },
+      {
+        id: '2',
+        title: 'Project Review',
+        date: '2024-01-16',
+        time: '2:00 PM',
+        location: 'Virtual'
+      }
+    ];
+  }
+
+  async getEmailSummary(): Promise<EmailSummary> {
+    // Mock implementation
+    return {
+      unreadCount: 5,
+      importantEmails: [
+        {
+          from: 'john@example.com',
+          subject: 'Project Update',
+          preview: 'The latest updates on the project...'
+        }
+      ]
+    };
+  }
+
+  async getStockPrice(symbol: string): Promise<StockData> {
     return {
       symbol: symbol.toUpperCase(),
       price: (Math.random() * 1000 + 100).toFixed(2),
@@ -150,11 +207,23 @@ export class RealtimeDataService {
     };
   }
 
+  async getStockPrices(symbols: string[]): Promise<StockData[]> {
+    return Promise.all(symbols.map(symbol => this.getStockPrice(symbol)));
+  }
+
   getConfiguration() {
     return {
       hasWeatherApi: !!this.weatherApiKey,
       hasNewsApi: !!this.newsApiKey
     };
+  }
+
+  getConfigurationStatus() {
+    return this.getConfiguration();
+  }
+
+  isFullyConfigured(): boolean {
+    return !!(this.weatherApiKey && this.newsApiKey);
   }
 }
 

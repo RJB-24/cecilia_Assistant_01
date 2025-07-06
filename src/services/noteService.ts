@@ -1,147 +1,186 @@
 
-/**
- * Note service for automatic note-taking from videos and meetings
- * Leverages Groq AI for transcription and summarization
- */
-
 import { groqService } from './groqService';
 
-export interface NoteTakingOptions {
+export interface NoteGenerationOptions {
   title?: string;
-  duration?: number;
-  keywords?: string[];
-  format?: 'bullets' | 'paragraphs' | 'outline';
-  source?: 'video' | 'meeting' | 'manual';
+  format?: 'bullet' | 'outline' | 'summary' | 'transcript';
+  language?: string;
 }
 
-export interface Note {
+export interface GeneratedNote {
   id: string;
   title: string;
   content: string;
-  tags: string[];
+  format: string;
   createdAt: Date;
-  source: 'video' | 'meeting' | 'manual';
-  sourceDetails?: {
-    url?: string;
-    participants?: string[];
-    duration?: number;
-  };
+  source?: 'audio' | 'video' | 'text' | 'meeting';
+  metadata?: Record<string, any>;
 }
 
-class NoteService {
-  private notes: Note[] = [];
+export class NoteService {
+  private notes: GeneratedNote[] = [];
 
   /**
-   * Generate notes from audio/video content
-   * Uses Groq AI to transcribe and summarize
+   * Generate notes from audio/video media using Groq's transcription and AI capabilities
    */
-  async generateNotesFromMedia(audioBlob: Blob, options: NoteTakingOptions = {}): Promise<Note> {
+  async generateNotesFromMedia(
+    media: Blob, 
+    options: NoteGenerationOptions = {}
+  ): Promise<GeneratedNote> {
     try {
-      // First transcribe the audio using Groq's whisper model
-      const transcript = await groqService.transcribeAudio(audioBlob);
+      // Convert Blob to File for Groq API
+      const mediaFile = new File([media], 'recording.webm', { 
+        type: media.type || 'audio/webm',
+        lastModified: Date.now()
+      });
+
+      // First, transcribe the audio using Groq
+      const transcript = await groqService.transcribeAudio(mediaFile);
       
-      // Then generate a summary and notes using Groq's LLM
-      const promptTemplate = `
-        Create structured notes from this transcript of a ${options.title || 'meeting/video'}.
-        ${options.keywords?.length ? 'Focus on these keywords: ' + options.keywords.join(', ') : ''}
-        Format the notes as ${options.format || 'bullets'}.
-        
-        Transcript: 
-        ${transcript}
-      `;
-      
-      const summary = await groqService.processCommand(promptTemplate);
-      
-      // Create a new note
-      const note: Note = {
-        id: `note_${Date.now()}`,
-        title: options.title || `Notes from ${new Date().toLocaleString()}`,
-        content: summary,
-        tags: options.keywords || [],
+      // Then use Groq to generate structured notes from the transcript
+      const notesPrompt = this.buildNotesPrompt(transcript, options);
+      const structuredNotes = await groqService.processCommand(notesPrompt, {
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.3,
+        max_tokens: 1000
+      });
+
+      const note: GeneratedNote = {
+        id: this.generateId(),
+        title: options.title || this.extractTitleFromContent(structuredNotes),
+        content: structuredNotes,
+        format: options.format || 'outline',
         createdAt: new Date(),
-        source: options.source || 'video',
-        sourceDetails: {
-          duration: options.duration
+        source: 'audio',
+        metadata: {
+          originalTranscript: transcript,
+          mediaSize: media.size,
+          mediaType: media.type
         }
       };
-      
-      // Save the note
+
       this.notes.push(note);
-      
-      // Store in localStorage for persistence
-      this.saveNotesToStorage();
-      
       return note;
     } catch (error) {
       console.error('Error generating notes from media:', error);
-      throw new Error(`Failed to generate notes: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error('Failed to generate notes from media');
     }
   }
-  
+
   /**
-   * Generate meeting notes from an ongoing meeting
-   * Uses screen context and audio input
+   * Generate notes from text input
    */
-  async generateMeetingNotes(meetingTitle: string, audioBlob: Blob): Promise<Note> {
-    return this.generateNotesFromMedia(audioBlob, { 
-      title: meetingTitle,
-      format: 'outline',
-      source: 'meeting'
-    });
-  }
-  
-  /**
-   * Save notes to localStorage
-   */
-  private saveNotesToStorage(): void {
+  async generateNotesFromText(
+    text: string,
+    options: NoteGenerationOptions = {}
+  ): Promise<GeneratedNote> {
     try {
-      localStorage.setItem('groqflow_notes', JSON.stringify(this.notes));
+      const notesPrompt = this.buildNotesPrompt(text, options);
+      const structuredNotes = await groqService.processCommand(notesPrompt, {
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.3,
+        max_tokens: 1000
+      });
+
+      const note: GeneratedNote = {
+        id: this.generateId(),
+        title: options.title || this.extractTitleFromContent(structuredNotes),
+        content: structuredNotes,
+        format: options.format || 'outline',
+        createdAt: new Date(),
+        source: 'text',
+        metadata: {
+          originalText: text
+        }
+      };
+
+      this.notes.push(note);
+      return note;
     } catch (error) {
-      console.error('Error saving notes to storage:', error);
+      console.error('Error generating notes from text:', error);
+      throw new Error('Failed to generate notes from text');
     }
   }
-  
-  /**
-   * Load notes from localStorage
-   */
-  loadNotesFromStorage(): void {
-    try {
-      const storedNotes = localStorage.getItem('groqflow_notes');
-      if (storedNotes) {
-        this.notes = JSON.parse(storedNotes);
-      }
-    } catch (error) {
-      console.error('Error loading notes from storage:', error);
+
+  private buildNotesPrompt(content: string, options: NoteGenerationOptions): string {
+    const format = options.format || 'outline';
+    const language = options.language || 'English';
+    
+    let prompt = `Please analyze the following content and create structured notes in ${language}.\n\n`;
+    
+    switch (format) {
+      case 'bullet':
+        prompt += "Format the notes as bullet points with clear hierarchy.\n";
+        break;
+      case 'outline':
+        prompt += "Format the notes as a detailed outline with main topics and subtopics.\n";
+        break;
+      case 'summary':
+        prompt += "Create a concise summary highlighting the key points.\n";
+        break;
+      case 'transcript':
+        prompt += "Clean up and structure the transcript with proper formatting.\n";
+        break;
     }
+    
+    prompt += `\nContent to analyze:\n${content}\n\n`;
+    prompt += "Please provide well-structured, comprehensive notes that capture all important information.";
+    
+    return prompt;
   }
-  
+
+  private extractTitleFromContent(content: string): string {
+    // Extract first line or first few words as title
+    const lines = content.split('\n');
+    const firstLine = lines[0]?.trim();
+    
+    if (firstLine && firstLine.length > 0) {
+      return firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+    }
+    
+    return `Notes - ${new Date().toLocaleDateString()}`;
+  }
+
+  private generateId(): string {
+    return `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
   /**
-   * Get all notes
+   * Get all generated notes
    */
-  getAllNotes(): Note[] {
+  getAllNotes(): GeneratedNote[] {
     return [...this.notes];
   }
-  
+
   /**
-   * Get note by ID
+   * Get a specific note by ID
    */
-  getNoteById(id: string): Note | undefined {
+  getNoteById(id: string): GeneratedNote | undefined {
     return this.notes.find(note => note.id === id);
   }
-  
+
   /**
-   * Delete note by ID
+   * Delete a note by ID
    */
   deleteNote(id: string): boolean {
-    const initialLength = this.notes.length;
-    this.notes = this.notes.filter(note => note.id !== id);
-    
-    if (this.notes.length !== initialLength) {
-      this.saveNotesToStorage();
+    const index = this.notes.findIndex(note => note.id === id);
+    if (index !== -1) {
+      this.notes.splice(index, 1);
       return true;
     }
-    
     return false;
+  }
+
+  /**
+   * Update a note
+   */
+  updateNote(id: string, updates: Partial<GeneratedNote>): GeneratedNote | null {
+    const index = this.notes.findIndex(note => note.id === id);
+    if (index !== -1) {
+      this.notes[index] = { ...this.notes[index], ...updates };
+      return this.notes[index];
+    }
+    return null;
   }
 }
 

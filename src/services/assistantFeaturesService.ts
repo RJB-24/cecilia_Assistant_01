@@ -24,12 +24,10 @@ export class AssistantFeaturesService {
     try {
       console.log('Initializing CECILIA Assistant Features...');
       
-      // Initialize Groq service
       if (!groqService.isConfigured()) {
         console.warn('Groq API not configured. Some features will be limited.');
       }
 
-      // Test voice capabilities
       if (voiceService.isSupported()) {
         console.log('Voice recognition supported');
       } else {
@@ -52,7 +50,6 @@ export class AssistantFeaturesService {
     try {
       console.log('Processing advanced command:', command);
 
-      // Determine intent and route to appropriate handler
       const intent = await this.analyzeIntent(command);
       
       switch (intent) {
@@ -171,7 +168,6 @@ export class AssistantFeaturesService {
   }
 
   private async handleEmailCommand(command: string): Promise<AssistantResponse> {
-    // Extract email details from command
     const recipient = this.extractEmailRecipient(command);
     const subject = this.extractEmailSubject(command);
     
@@ -204,7 +200,6 @@ export class AssistantFeaturesService {
   private async handleDataAnalysis(command: string): Promise<AssistantResponse> {
     if (groqService.isConfigured()) {
       try {
-        // Use compound-beta for analysis tasks
         const response = await groqService.processCommand(command, {
           model: 'compound-beta',
           temperature: 0.3
@@ -242,7 +237,6 @@ export class AssistantFeaturesService {
   private async handleWebSearch(command: string): Promise<AssistantResponse> {
     if (groqService.isConfigured()) {
       try {
-        // Use compound-beta for web search capabilities
         const response = await groqService.processCommand(command, {
           model: 'compound-beta',
           temperature: 0.5

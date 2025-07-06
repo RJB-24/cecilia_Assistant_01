@@ -16,7 +16,7 @@ export interface TTSOptions {
 export class GroqService {
   private client: Groq | null = null;
   private apiKey: string | null = null;
-  private isConfigured = false;
+  private configured = false;
 
   constructor() {
     this.initialize();
@@ -35,19 +35,23 @@ export class GroqService {
       apiKey: apiKey,
       dangerouslyAllowBrowser: true
     });
-    this.isConfigured = true;
+    this.configured = true;
     localStorage.setItem('groq_api_key', apiKey);
   }
 
   clearApiKey() {
     this.apiKey = null;
     this.client = null;
-    this.isConfigured = false;
+    this.configured = false;
     localStorage.removeItem('groq_api_key');
   }
 
+  isConfigured(): boolean {
+    return this.configured && this.client !== null;
+  }
+
   isReady(): boolean {
-    return this.isConfigured && this.client !== null;
+    return this.configured && this.client !== null;
   }
 
   async processCommand(
@@ -76,11 +80,20 @@ export class GroqService {
         stream: options.stream || false
       });
 
-      return completion.choices[0]?.message?.content || "I'm here to help, but I couldn't generate a response. Please try again.";
+      if (options.stream) {
+        // Handle streaming response
+        return "Streaming response initiated";
+      }
+
+      return (completion as any).choices[0]?.message?.content || "I'm here to help, but I couldn't generate a response. Please try again.";
     } catch (error) {
       console.error('Groq API Error:', error);
       throw new Error('Failed to process command with Groq API');
     }
+  }
+
+  async processAgentCommand(message: string): Promise<string> {
+    return this.processWithAgent(message);
   }
 
   async transcribeAudio(audioFile: File): Promise<string> {
@@ -96,7 +109,7 @@ export class GroqService {
         response_format: "text"
       });
 
-      return transcription;
+      return transcription as string;
     } catch (error) {
       console.error('Groq Transcription Error:', error);
       throw new Error('Failed to transcribe audio');
@@ -152,7 +165,7 @@ export class GroqService {
         max_completion_tokens: 300
       });
 
-      return completion.choices[0]?.message?.content || "I couldn't process that request with agent capabilities.";
+      return (completion as any).choices[0]?.message?.content || "I couldn't process that request with agent capabilities.";
     } catch (error) {
       console.error('Groq Agent Error:', error);
       throw new Error('Failed to process with agent capabilities');
@@ -165,7 +178,7 @@ export class GroqService {
 
   getConfiguration() {
     return {
-      isConfigured: this.isConfigured,
+      isConfigured: this.configured,
       hasApiKey: !!this.apiKey
     };
   }
