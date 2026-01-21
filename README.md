@@ -2,7 +2,6 @@
 
 GroqFlow is a voice-first AI assistant that acts as a digital employee, autonomously executing tasks such as email drafting, social media management, data analysis, and desktop automation. The assistant leverages Groq's AI capabilities for natural language processing and Screenpipe's Terminator for desktop automation.
 
-![GroqFlow Demo](https://picsum.photos/800/400)
 
 ## Table of Contents
 
